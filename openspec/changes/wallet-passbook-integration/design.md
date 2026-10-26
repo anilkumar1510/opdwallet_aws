@@ -99,3 +99,42 @@ To prevent the wallet consumption UI from disappearing when `OpdWalletAccountDto
 - **Allocation Preservation**: `account.total_topup_amt` in the wallet microservice only reflects manual out-of-pocket top-ups and may be `0` or null. `walletTotal.allocated` therefore computes `baseLimit + topup`, ensuring corporate policy entitlement (e.g. ₹26,000 or ₹14,000) is never zeroed out.
 - **Consumption Cycle Preservation**: `walletTotal.consumed` prioritizes the real clinical consumption tracked by `opd_consumption_cycle` (`versionTotal.consumed`). If consumption cycle records exist, they are preserved rather than being overwritten by `account.total_topup_amt - account.avl_bal`.
 - **Live Balance Synchronization**: `walletTotal.available` utilizes live `account.avl_bal` from the wallet account when present, synchronizing the live balance with the consumption UI.
+
+### 6. Server-Side Pagination & Page Navigation (`GET_WALLET_PASSBOOK`)
+To ensure optimal network performance and smooth user navigation:
+- **Initial Query**: `PolicyStore.fetchWalletPassbook()` issues `GET /wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK&args=user_code:{targetUhId}&page_no=0&page_size=10`, fetching 10 records.
+- **Page-by-Page Navigation (`goToPassbookPage`)**:
+  - Direct navigation to `pageNo` requesting 10 records with `append = false`.
+  - Replaces current page records with the newly fetched page records.
+  - Updates `_passbookPage` signal and re-evaluates `_passbookHasMore`.
+  - Computes `_passbookTotalCount` from backend response `count` to power accurate `"Page X of Y"` page count indicators.
+
+### 7. Common Pagination Component (`opd-wallet-pagination`)
+Standardized pagination component matching the design pattern:
+- **Location**: `projects/member/src/app/shared/ui/wallet-pagination.ts`.
+- **Selector**: `opd-wallet-pagination`.
+- **Template Structure**:
+  ```html
+  <nav [attr.aria-label]="ariaLabel()" class="mt-3 flex items-center justify-between gap-3">
+    <button type="button" class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 disabled:opacity-40" [disabled]="!hasPrev() || loading()" (click)="onPrev()">
+      ← Previous
+    </button>
+    <p class="text-sm text-ink-500">Page {{ page() + 1 }} of {{ totalPages() }}</p>
+    <button type="button" class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 disabled:opacity-40" [disabled]="!hasNext() || loading()" (click)="onNext()">
+      Next →
+    </button>
+  </nav>
+  ```
+- **Inputs**:
+  - `page: number` (0-indexed current page)
+  - `pageSize: number` (records per page, default 10)
+  - `total: number | null` (total records count)
+  - `hasMore: boolean` (fallback if total is null)
+  - `loading: boolean` (disables buttons during in-flight network requests)
+  - `ariaLabel: string` (accessible nav label)
+- **Outputs**:
+  - `prev: void`
+  - `next: void`
+  - `pageChange: number` (emits target page index)
+- **Adoption**:
+  - Adopted in `WalletPage` (`wallet-page.ts`) for Recent Activity transactions.

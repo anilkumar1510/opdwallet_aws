@@ -65,8 +65,13 @@ export class PolicyStore {
 
   private readonly _passbook = signal<readonly WalletPassbookItemDto[]>([]);
   private readonly _passbookLoading = signal<boolean>(false);
+  private readonly _passbookLoadingMore = signal<boolean>(false);
   private readonly _passbookError = signal<string | null>(null);
+  private readonly _passbookPage = signal<number>(0);
+  private readonly _passbookHasMore = signal<boolean>(true);
+  private readonly _passbookTotalCount = signal<number | null>(null);
 
+  private lastPassbookUhId: string | null = null;
   private loadedId: string | null = null;
   private lastPatientId: string | null = null;
   private loadedPatientId: string | null = null;
@@ -82,7 +87,11 @@ export class PolicyStore {
   readonly walletAccount = this._walletAccount.asReadonly();
   readonly passbook = this._passbook.asReadonly();
   readonly passbookLoading = this._passbookLoading.asReadonly();
+  readonly passbookLoadingMore = this._passbookLoadingMore.asReadonly();
   readonly passbookError = this._passbookError.asReadonly();
+  readonly passbookPage = this._passbookPage.asReadonly();
+  readonly passbookHasMore = this._passbookHasMore.asReadonly();
+  readonly passbookTotalCount = this._passbookTotalCount.asReadonly();
 
   readonly enrichedPassbook = computed<readonly EnrichedWalletPassbookItem[]>(() =>
     mapPassbookToEnriched(this._passbook(), this._consumptionCycles()),
@@ -430,10 +439,16 @@ export class PolicyStore {
   }
 
   /**
-   * Fetches the member's wallet passbook history (/wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK&args=user_code:...).
+   * Fetches the member's wallet passbook history (/wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK&args=user_code:...&page_no=...&page_size=...).
    * Resolves target UHID via Floater/Individual rules and falls back to GET_MY_CONFIG UHID via UserInfoStore.
+   * Supports server-side pagination with initial 10 records and page-by-page navigation.
    */
-  fetchWalletPassbook(uhId?: string | null): void {
+  fetchWalletPassbook(
+    uhId?: string | null,
+    pageNo: number = 0,
+    pageSize: number = 10,
+    append: boolean = false,
+  ): void {
     const version = this._version();
     const isFloater = (version?.allocation_type || '').trim().toUpperCase() === 'FLOATER';
     const activeMemberUhId = this._activeUhId();
@@ -450,25 +465,93 @@ export class PolicyStore {
       return;
     }
 
-    this._passbookLoading.set(true);
+    this.lastPassbookUhId = targetUhId;
+
+    if (append) {
+      this._passbookLoadingMore.set(true);
+    } else {
+      this._passbookLoading.set(true);
+      this._passbook.set([]);
+      this._passbookPage.set(pageNo);
+      this._passbookHasMore.set(true);
+    }
     this._passbookError.set(null);
-    const queryArgs = `queryId=GET_WALLET_PASSBOOK&args=user_code%3A${encodeURIComponent(targetUhId)}`;
+
+    const queryArgs = `queryId=GET_WALLET_PASSBOOK&args=user_code%3A${encodeURIComponent(targetUhId)}&page_no=${pageNo}&page_size=${pageSize}`;
     this.appService
       .getcall('wallet_passbook', 'wallet', queryArgs)
       .subscribe({
         next: (res: any) => {
-          console.log('[WalletPassbook] Response for user_code ' + targetUhId + ':', res);
+          console.log(`[WalletPassbook] Response for user_code ${targetUhId} (page ${pageNo}):`, res);
           const parsed = typeof res === 'string' ? JSON.parse(res) : res;
-          const items = parsed?.resource || parsed?.data || (Array.isArray(parsed) ? parsed : []);
-          this._passbook.set(items);
+          const items: WalletPassbookItemDto[] = parsed?.resource || parsed?.data || (Array.isArray(parsed) ? parsed : []);
+
+          if (typeof parsed?.count === 'number') {
+            this._passbookTotalCount.set(parsed.count);
+          } else if (this._passbookTotalCount() === null && items.length < pageSize) {
+            this._passbookTotalCount.set(pageNo * pageSize + items.length);
+          }
+
+          if (append) {
+            this._passbook.update((prev) => {
+              const existingIds = new Set(prev.map((i) => i.id).filter(Boolean));
+              const newUnique = items.filter((i) => !i.id || !existingIds.has(i.id));
+              return [...prev, ...newUnique];
+            });
+          } else {
+            this._passbook.set(items);
+          }
+
+          this._passbookPage.set(pageNo);
+
+          // Determine if more records exist on the server
+          const totalFromApi = this._passbookTotalCount();
+          let hasMore: boolean;
+          if (items.length < pageSize) {
+            hasMore = false;
+          } else if (totalFromApi !== null && totalFromApi !== undefined) {
+            hasMore = (pageNo + 1) * pageSize < totalFromApi;
+          } else {
+            hasMore = true;
+          }
+          this._passbookHasMore.set(hasMore);
+
           this._passbookLoading.set(false);
+          this._passbookLoadingMore.set(false);
         },
         error: (err: any) => {
-          console.error('[WalletPassbook] Error for user_code ' + targetUhId + ':', err);
+          console.error(`[WalletPassbook] Error for user_code ${targetUhId} (page ${pageNo}):`, err);
           this._passbookError.set(err?.message || 'Failed to load passbook');
           this._passbookLoading.set(false);
+          this._passbookLoadingMore.set(false);
         },
       });
+  }
+
+  /**
+   * Navigates to a specific page of wallet passbook records (0-indexed).
+   */
+  goToPassbookPage(pageNo: number, pageSize: number = 10): void {
+    if (pageNo < 0 || this._passbookLoading() || this._passbookLoadingMore()) {
+      return;
+    }
+    const total = this._passbookTotalCount();
+    if (total !== null && total !== undefined) {
+      const maxPages = Math.max(1, Math.ceil(total / pageSize));
+      if (pageNo >= maxPages) return;
+    }
+    this.fetchWalletPassbook(this.lastPassbookUhId, pageNo, pageSize, false);
+  }
+
+  /**
+   * Fetches the next page of wallet passbook records and appends them to the current list.
+   */
+  loadMoreWalletPassbook(pageSize: number = 10): void {
+    if (this._passbookLoading() || this._passbookLoadingMore() || !this._passbookHasMore()) {
+      return;
+    }
+    const nextPage = this._passbookPage() + 1;
+    this.fetchWalletPassbook(this.lastPassbookUhId, nextPage, pageSize, true);
   }
 
   /**
