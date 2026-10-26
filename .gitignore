@@ -8,3 +8,6 @@ serve.log
 .idea
 .omo
 test-results
+.claude
+.opencode
+openspec

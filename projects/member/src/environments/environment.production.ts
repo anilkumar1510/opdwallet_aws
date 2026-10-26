@@ -15,6 +15,12 @@ export const environment = {
    * spinning on a connection that cannot succeed.
    */
   agoraAppId: '',
+
+  /**
+   * Google Maps Map ID for the claim location picker. EMPTY until ops creates
+   * the production Map ID; until then the picker works without its marker.
+   */
+  googleMapsMapId: '660fc53aa030fe20cd4f1280',
   applicationURL: 'habithealth.com',
   OPD_WALLET_PUBLIC_PATH: 'https://opd-wallet.habithealth.com'
 } as const;

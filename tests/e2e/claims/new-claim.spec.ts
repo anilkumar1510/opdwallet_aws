@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { injectSessionCookie } from '../../utils/session';
+import { typeLocations } from './location-fallback';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -61,11 +62,17 @@ test.describe('New claim', () => {
     // Now select a category to trigger providerName validation
     await page.locator('#category').selectOption('ONLINE_CONSULTATION');
     await continueBtn.click();
+    await expect(page.locator('text=Choose the doctor location.')).toBeVisible({ timeout: 5000 });
+
+    // Once the member falls back to typing, the message asks them to enter it.
+    await typeLocations(page);
+    await continueBtn.click();
     await expect(page.locator('text=Enter the doctor location.')).toBeVisible({ timeout: 5000 });
   });
 
   test('navigates step 1 → 2 → 3 with valid data', async ({ page }) => {
     await page.locator('#category').selectOption('ONLINE_CONSULTATION');
+    await typeLocations(page);
     await page.locator('#providerName').fill('Test Clinic');
     await page.locator('#treatmentDate').fill('2026-09-01');
     await page.locator('#billAmount').fill('100');
@@ -96,6 +103,7 @@ test.describe('New claim', () => {
 
   test('review summary reflects entered data', async ({ page }) => {
     await page.locator('#category').selectOption('VISION');
+    await typeLocations(page);
     await page.locator('#providerName').fill('Eye Clinic');
     await page.locator('#purchaseLocation').fill('Optical Shop');
     await page.locator('#treatmentDate').fill('2026-09-15');
@@ -131,6 +139,7 @@ test.describe('New claim', () => {
 
   test('over-limit bill shows cap notice on submit', async ({ page }) => {
     await page.locator('#category').selectOption('ONLINE_CONSULTATION');
+    await typeLocations(page);
     await page.locator('#providerName').fill('Habit Health Clinic');
     await page.locator('#billAmount').fill('600');
     await page.locator('#treatmentDate').fill('2026-09-01');
@@ -201,6 +210,7 @@ test.describe('New claim', () => {
         const providerName = page.locator('#providerName');
         if (await providerName.count() > 0) {
           await expect(providerName).toBeAttached({ timeout: 5000 });
+          await typeLocations(page);
           await providerName.fill('Test Clinic');
         }
         const purchaseLocation = page.locator('#purchaseLocation');

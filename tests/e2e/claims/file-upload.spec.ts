@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { injectSessionCookie } from '../../utils/session';
+import { typeLocations } from './location-fallback';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -16,6 +17,7 @@ test.describe('File upload', () => {
     
     // Advance to step 2.
     await page.locator('#category').selectOption('ONLINE_CONSULTATION');
+    await typeLocations(page);
     await page.locator('#providerName').fill('Test Clinic');
     await page.locator('#treatmentDate').fill('2026-09-01');
     await page.locator('#billAmount').fill('100');

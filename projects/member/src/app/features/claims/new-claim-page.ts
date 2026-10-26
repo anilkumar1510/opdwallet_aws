@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
@@ -29,6 +29,7 @@ import { appConfig } from '../../app.config';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
 import { OriginalDocsNotice } from '../../shared/ui/original-docs-notice';
+import { LocationPickerModal, PickedLocation } from '../../shared/ui/location-picker-modal';
 import { Observable } from 'rxjs';
 const MAX_BYTES = 5 * 1024 * 1024;
 const WHEN = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -49,7 +50,7 @@ const STEPS = [
 @Component({
   selector: 'opd-new-claim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, FileUploader, OriginalDocsNotice],
+  imports: [FormsModule, RouterLink, FileUploader, OriginalDocsNotice, LocationPickerModal],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -256,11 +257,27 @@ const STEPS = [
 
                 <!-- Location fields per category (matrix): one for consults /
                      dental / vaccination, two for pharmacy, pathology, radiology,
-                     vision. Second location is a PLACEHOLDER param. -->
+                     vision. Second location is a PLACEHOLDER param. Picked on a
+                     map; typed only after the member falls back from it. -->
                 @for (field of locationFields(); track field.key) {
                   <div>
-                    <label [attr.for]="field.key" class="mb-1 block text-sm font-medium text-ink-700">{{ field.label }}</label>
-                    <input [id]="field.key" [name]="field.key" [placeholder]="field.placeholder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="locationValue(field.key)" (ngModelChange)="setLocation(field.key, $event)" [ngModelOptions]="{ standalone: true }" />
+                    <label [id]="field.key + '-label'" [attr.for]="field.key" class="mb-1 block text-sm font-medium text-ink-700">{{ field.label }}</label>
+                    @if (locationMode() === 'map') {
+                      <div class="relative">
+                        <button type="button" [id]="field.key" aria-haspopup="dialog" [attr.aria-labelledby]="field.key + '-label ' + field.key" class="min-h-touch w-full truncate rounded-xl border border-surface-border bg-white py-2 pl-3 pr-10 text-left text-sm focus:border-brand-500 focus:outline-none" (click)="openPicker(field.key)">
+                          @if (locationValue(field.key); as value) {
+                            <span class="text-ink-900">{{ value }}</span>
+                          } @else {
+                            <span class="text-ink-500">{{ field.placeholder }}</span>
+                          }
+                        </button>
+                        @if (locationValue(field.key)) {
+                          <button type="button" class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-ink-500 hover:text-ink-900" [attr.aria-label]="'Clear ' + field.label" (click)="setLocation(field.key, '')"><span aria-hidden="true">✕</span></button>
+                        }
+                      </div>
+                    } @else {
+                      <input [id]="field.key" [name]="field.key" [placeholder]="field.placeholder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="locationValue(field.key)" (ngModelChange)="setLocation(field.key, $event)" [ngModelOptions]="{ standalone: true }" />
+                    }
                   </div>
                 }
 
@@ -468,6 +485,15 @@ const STEPS = [
         <p class="text-xs text-ink-500">Please don't close this page.</p>
       </div>
     }
+
+    <opd-location-picker-modal
+      [open]="pickerFor() !== null"
+      [title]="pickerTitle()"
+      [initial]="pickerInitial()"
+      (confirmed)="onLocationPicked($event)"
+      (cancelled)="closePicker()"
+      (unavailable)="typeLocations()"
+    />
   `,
 })
 export class NewClaimPage {
@@ -476,6 +502,7 @@ export class NewClaimPage {
   protected readonly policyStore = inject(PolicyStore);
   protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
 
   protected readonly steps = STEPS;
   /** Opens on the bank step until the payout account is approved. */
@@ -617,6 +644,19 @@ export class NewClaimPage {
   );
   protected readonly isDental = computed(() => isDentalCategory(this.category()));
   protected readonly locationFields = computed(() => locationFieldsFor(this.category()));
+  /** Locations are picked on a map until Maps fails and the member chooses to type. */
+  protected readonly locationMode = signal<'map' | 'typed'>('map');
+  /** The location field the map picker is open for. */
+  protected readonly pickerFor = signal<'providerName' | 'purchaseLocation' | null>(null);
+  protected readonly pickerTitle = computed(
+    () => this.locationFields().find((field) => field.key === this.pickerFor())?.label ?? '',
+  );
+  /** The last confirmed pick per field, so reopening the picker shows it on the map. */
+  private readonly picks = signal<Partial<Record<'providerName' | 'purchaseLocation', PickedLocation>>>({});
+  protected readonly pickerInitial = computed(() => {
+    const key = this.pickerFor();
+    return key ? this.currentPick(key) : null;
+  });
 
   protected readonly categoryBalance = computed(() => {
     const chosen = this.selectedCategory();
@@ -723,7 +763,8 @@ export class NewClaimPage {
     if (this.category() === '') return 'Choose a claim category.';
     for (const field of this.locationFields()) {
       if (field.required && this.locationValue(field.key).trim() === '') {
-        return `Enter the ${field.label.toLowerCase()}.`;
+        const verb = this.locationMode() === 'map' ? 'Choose' : 'Enter';
+        return `${verb} the ${field.label.toLowerCase()}.`;
       }
     }
     if (this.treatmentDate() === '') return 'Choose the treatment date.';
@@ -835,6 +876,50 @@ export class NewClaimPage {
 
   protected setLocation(key: 'providerName' | 'purchaseLocation', value: string): void {
     (key === 'providerName' ? this.providerName : this.purchaseLocation).set(value);
+  }
+
+  /** A pick only counts while its field still shows it; after a clear or retype there is none. */
+  private currentPick(key: 'providerName' | 'purchaseLocation'): PickedLocation | null {
+    const pick = this.picks()[key];
+    return pick && pick.label === this.locationValue(key) ? pick : null;
+  }
+
+  /** `lat_long_<field key>: 'lat,lng'` for each location field on the form that holds a map pick. */
+  private pickedCoordinates(): Record<string, string> {
+    const coordinates: Record<string, string> = {};
+    for (const field of this.locationFields()) {
+      const pick = this.currentPick(field.key);
+      if (pick) coordinates[`lat_long_${field.key}`] = `${pick.position.lat},${pick.position.lng}`;
+    }
+    return coordinates;
+  }
+
+  protected openPicker(key: 'providerName' | 'purchaseLocation'): void {
+    this.pickerFor.set(key);
+  }
+
+  /** Only the field the picker was opened from takes the pick. */
+  protected onLocationPicked(pick: PickedLocation): void {
+    console.log('Picked location:', pick);
+    const key = this.pickerFor();
+    if (key) {
+      this.setLocation(key, pick.label);
+      this.picks.update((picks) => ({ ...picks, [key]: pick }));
+    }
+    this.closePicker();
+  }
+
+  /** Closes the picker and puts focus back on the field it was opened from. */
+  protected closePicker(): void {
+    const key = this.pickerFor();
+    this.pickerFor.set(null);
+    if (key) afterNextRender(() => document.getElementById(key)?.focus(), { injector: this.injector });
+  }
+
+  /** Maps cannot be used: every location field becomes a text box for the rest of this form. */
+  protected typeLocations(): void {
+    this.locationMode.set('typed');
+    this.closePicker();
   }
 
   protected filesFor(kind: DocSlotKey): readonly File[] {
@@ -1102,6 +1187,7 @@ export class NewClaimPage {
       "claim_type": this.claimType(),
       "benefit_category": this.category(),
       "provider": this.providerName().trim(),
+      ...this.pickedCoordinates(),
       "bill_number": this.billNumber().trim(),
       "currency_code": "INR",
       "original_bill_amount": this.billAmount() ?? 0,
