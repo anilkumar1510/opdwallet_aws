@@ -746,8 +746,10 @@ export class OnlineConsultPage implements OnInit {
       (s.speciality_name && s.speciality_name.toLowerCase() === code.toLowerCase()) ||
       (s.display && s.display.toLowerCase() === code.toLowerCase())
     );
-    const dynamicCode = spec?.speciality_code || spec?.code || spec?.speciality_system_name || spec?.speciality_name || code;
-    this.consultationService.getDoctors(dynamicCode).subscribe(docs => this.filteredDoctors.set(docs));
+    const filterCode = spec?.code || spec?.speciality_system_name || spec?.speciality_code || spec?.speciality_name || code;
+    const facilityId = spec?.facility_id || '4c5baa60-db39-11f0-b303-8ae465e2df26-45';
+    const mode = (this.mode() || 'video').toLowerCase();
+    this.consultationService.getDoctors(filterCode, mode, facilityId).subscribe(docs => this.filteredDoctors.set(docs));
   }
 
   protected selectDoctor(doc: Doctor): void {
@@ -766,8 +768,10 @@ export class OnlineConsultPage implements OnInit {
         (s.speciality_name && s.speciality_name.toLowerCase() === this.speciality().toLowerCase()) ||
         (s.display && s.display.toLowerCase() === this.speciality().toLowerCase())
       );
-      const dynamicCode = spec?.speciality_code || spec?.code || spec?.speciality_system_name || spec?.speciality_name || this.speciality();
-      this.consultationService.getDoctors(dynamicCode).subscribe(docs => {
+      const filterCode = spec?.code || spec?.speciality_system_name || spec?.speciality_code || spec?.speciality_name || this.speciality();
+      const facilityId = spec?.facility_id || '4c5baa60-db39-11f0-b303-8ae465e2df26-45';
+      const mode = (this.mode() || 'video').toLowerCase();
+      this.consultationService.getDoctors(filterCode, mode, facilityId).subscribe(docs => {
         this.filteredDoctors.set(docs);
         this.search.set('');
       });
