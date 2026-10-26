@@ -322,11 +322,12 @@ export class AHCStore {
 
         // https://api.habithealth.com/
         //master-management/api/v1/?queryId=&args=&filter=serviceItemCode:hyundai-blood-sample-collection-at-home-below-40-female-package,mode_of_appointment:opd_network&page_no=0&page_size=9&search_columns=serviceItemName&search=&order_by=serviceItemName
-        const args = ''; //'user_id:' + userInfo?.user_id + ',service_type_code:phc,mode_of_appointment:opd_network';
+        const args = 'serviceItemCode:'+ serviceItemCode.toString().replaceAll(',',';'); //'user_id:' + userInfo?.user_id + ',service_type_code:phc,mode_of_appointment:opd_network';
         //  const queryId = 'GET_PAGE';
         // const applicationName = 'master-management';
         // const resourceName = 'service_item_search';
-        const filter = 'serviceItemCode:'+ (serviceItemCode.length > 1 ? serviceItemCode[1] : serviceItemCode[0]) +'';
+        // const filter = 'serviceItemCode:'+ (serviceItemCode.length > 1 ? serviceItemCode[1] : serviceItemCode[0]) +'';
+        const filter = '';
         // const filter = '';
         const page_no= 0 
         const page_size=100
@@ -382,7 +383,7 @@ export class AHCStore {
     }
     getAHCServiceItems(userInfo: any, packageList: any, seq = this.packageSeq){
         const packageListObj = packageList.data;
-        const serviceItemIds = this._ahcListServiceItemIds()
+        let serviceItemIds = this._ahcListServiceItemIds()
         const resourceName = 'opd_ahc_booking';
         const queryId = 'AHC_PACKAGE_DETAIL';
         const applicationName = 'habit-opd';
@@ -405,7 +406,7 @@ export class AHCStore {
         // const resourceName = 'phc_detail';
         // const queryId = 'GET_PAGE';
         // const applicationName = 'facility-management';
-        const args = '';
+        const args = 'phc_id:'+serviceItemIds.replaceAll(',',';')
         // const args = 'user_id:' + userInfo?.user_id +
         //              ',serviceItemCode:' + packageListObj?.service_item_code +
         //              ',facility_id:' + userInfo?.facilities[0]?.org_id +
@@ -415,10 +416,8 @@ export class AHCStore {
         //              ',bp_service_item_id:'+ packageListObj.id;
         //              ',mode_of_appointment: opd_network';
         
-        const filter = 'phc_id:'+packageListObj?.serviceItemId;
-        // const filter = 'phc_id:'+serviceItemIds;
-        // const filter = 'serviceItemId:'+serviceItemIds;
-        // const filter = 'serviceItemId:6adbf400-b1b6-11f1-a59c-f26e60bd39f7-92';
+        // const filter = 'phc_id:'+packageListObj?.serviceItemId;
+        const filter = ''; //'phc_id:'+serviceItemIds.replaceAll(',', '#');
         // 'serviceType_code:' + packageListObj?.service_type_code +
         //                 'is_searchable:true' +
         //                 'package_type_code:health_check' +
