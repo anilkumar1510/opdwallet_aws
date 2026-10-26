@@ -94,4 +94,27 @@ const depWithFallback = toFamilyMember(
 );
 assert.equal(depWithFallback.uhid, null);
 
+// Test employeeId mapping (from employee_id and employeeId)
+const memberWithSnakeEmpId = toFamilyMember(
+  {
+    id: 'r6',
+    mapped_id: 'MEM101',
+    mapped_name: 'Alex Doe',
+    employee_id: 'EMP-12345',
+  },
+  'MEM101',
+);
+assert.equal(memberWithSnakeEmpId.employeeId, 'EMP-12345');
+
+const memberWithCamelEmpId = toFamilyMember(
+  {
+    id: 'r7',
+    mapped_id: 'MEM102',
+    mapped_name: 'Jane Doe',
+    employeeId: 'EMP-67890',
+  },
+  'MEM102',
+);
+assert.equal(memberWithCamelEmpId.employeeId, 'EMP-67890');
+
 console.log('family-mapper.check: ok');

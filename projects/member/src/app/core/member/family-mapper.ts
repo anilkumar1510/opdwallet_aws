@@ -69,6 +69,7 @@ export interface FamilyMemberResource {
   user_name?: string;
   relationship?: string;
   employee_id?: string;
+  employeeId?: string;
 }
 
 function toGender(value: string | undefined): 'MALE' | 'FEMALE' | 'OTHER' | null {
@@ -144,6 +145,7 @@ export function toFamilyMember(
     relationshipCode: isSelf ? 'self' : (resource.relationship_code?.trim().toLowerCase() || 'self'),
     isPrimary: relationship === Relationship.Self,
     uhid: resource.uhId?.trim() || (isSelf ? (configUhId?.trim() || null) : null),
+    employeeId: resource.employee_id?.trim() || resource.employeeId?.trim() || null,
     dateOfBirth: toDob(resource.dob),
     gender: toGender(resource.gender_id),
   };

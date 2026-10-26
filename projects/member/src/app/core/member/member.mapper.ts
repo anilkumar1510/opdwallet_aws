@@ -90,6 +90,7 @@ export function toMember(dto: UserDto): Member {
     relationship,
     isPrimary: isPrimary(relationship),
     uhid: dto.uhid?.trim() || null,
+    employeeId: dto.employeeId?.trim() || dto.employee_id?.trim() || null,
     dateOfBirth: toDate(dto.dob ?? dto.dateOfBirth),
     gender: toGender(dto.gender),
   };

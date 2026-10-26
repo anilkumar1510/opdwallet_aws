@@ -1118,6 +1118,10 @@ export class NewClaimPage {
     });
 
 
+    const primaryMember = this.family.family().find((m) => m.isPrimary);
+    const resolvedUhid = patient.uhid || primaryMember?.uhid || null;
+    const resolvedEmployeeId = patient.employeeId || primaryMember?.employeeId || null;
+
     const payload = {
       "resourceType": "Claim",
       "user_id": patient.id,
@@ -1130,6 +1134,8 @@ export class NewClaimPage {
 
       "policy_id": "8ca9f31c-e1ad-478b-9b24-9f56e18a9165",
       "customer_id": "CUS-HH-000731",
+      ...(resolvedUhid ? { "uhid": resolvedUhid } : {}),
+      ...(resolvedEmployeeId ? { "employee_id": resolvedEmployeeId } : {}),
 
       "category": this.category(),
       ...(this.isDental() ? { "dental_claim_type": this.dentalSubType() } : {}),
