@@ -85,4 +85,5 @@ export interface WalletTransaction {
    * the total — and three identical ₹300 debits on one day are indistinguishable.
    */
   readonly balanceAfter: Money | null;
+  readonly transactionType?: string;
 }
