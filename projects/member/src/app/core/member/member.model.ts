@@ -18,6 +18,7 @@ export interface Member {
   readonly relationshipCode?: string;
   readonly isPrimary: boolean;
   readonly uhid: string | null;
+  readonly employeeId?: string | null;
   readonly dateOfBirth: Date | null;
   readonly gender: 'MALE' | 'FEMALE' | 'OTHER' | null;
 }

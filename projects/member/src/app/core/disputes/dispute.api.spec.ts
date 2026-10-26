@@ -274,7 +274,7 @@ describe('DisputeApi', () => {
         resourceType: 'Dispute',
         name: 'DIS-2026-00393',
         dispute_status: 'CLOSE',
-        final_reason: 'Claim amount verified against policy benefits. Awaiting support executive response.',
+        final_reason: 'Resolved by member',
       });
     });
 

@@ -46,6 +46,9 @@
 - [x] 4.18 Dynamically control `<opd-original-docs-notice>` visibility based on `claim_type === 'DIGITAL_PHYSICAL'`
 - [x] 4.19 Add detailed layout variant to `opd-coverage-banner` and adopt in `vision-page.ts` to dynamically display vision pool annual limit
 - [x] 4.20 Fallback to wallet annual limit when category has no pool assigned and display pool name details on coverage banner
+- [x] 4.21 Query `opd_consumption_cycle`, consolidate multiple category consumptions, calculate pool available balances, and display remaining/total on coverage banner
+- [x] 4.22 Format consumed amounts with negative prefix across wallet pool breakdown, coverage banner, and wallet stat tiles
+- [x] 4.23 Filter Health Benefits cards (`opd-benefit-card`) on dashboard to render only when `cashless === true` and exclude when `cashless === false`
 
 ## 5. Verification
 

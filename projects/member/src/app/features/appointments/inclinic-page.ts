@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
 
+import { MOCK_WALLET_BALANCES, WalletBalances, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PolicyStore } from '../../core/member/policy.store';
+import { PaymentSplitView } from '../../shared/ui/payment-split';
+
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
@@ -68,7 +72,7 @@ type Step =
 @Component({
   selector: 'opd-inclinic-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption, CoverageBannerComponent],
+  imports: [ClaimOption, CoverageBannerComponent, PaymentSplitView],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -202,16 +206,7 @@ type Step =
               @case ('cart') {
                 <p class="mb-2 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Appointment confirmed — your cart is ready.</p>
                 <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
-                <dl class="space-y-2 text-sm">
-                  <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ pay().fee }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
-                  @if (pay().excess > 0) {
-                    <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
-                  }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
-                </dl>
+                <opd-payment-split [split]="pay().split" billLabel="Consultation fee" />
               }
               @case ('receipt') {
                 @if (cancelled()) {
@@ -298,6 +293,11 @@ type Step =
 })
 export class InClinicPage {
   protected readonly claimModes = inject(ClaimModeStore);
+  /**
+   * Balances a payment here is capped at — the category/pool, then the total
+   * wallet. STATIC for now; the live pool balance is PolicyStore.poolBalanceFor.
+   */
+  protected readonly walletBalances = computed<WalletBalances>(() => MOCK_WALLET_BALANCES);
   protected readonly BenefitCategory = BenefitCategory;
   protected readonly specialities = SPECIALITIES;
   protected readonly patients = PATIENTS;
@@ -344,11 +344,9 @@ export class InClinicPage {
 
   protected readonly pay = computed(() => {
     const fee = this.doctor()?.fee ?? 0;
-    const covered = Math.min(fee, PER_TXN_LIMIT);
-    const copay = Math.round((covered * COPAY_PCT) / 100);
-    const walletBlock = covered - copay;
-    const excess = Math.max(0, fee - PER_TXN_LIMIT);
-    return { fee, covered, copay, walletBlock, excess, selfPay: copay + excess };
+    // Co-payment first, then the per-transaction limit, then the category/pool and total wallet balances.
+    const split = splitPayment(fee, percentCopay(COPAY_PCT), PER_TXN_LIMIT, this.walletBalances());
+    return { fee, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
   });
 
   protected primaryLabel(): string {

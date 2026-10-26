@@ -218,7 +218,8 @@ test.describe('Raise a grievance (submit)', () => {
     ]);
     await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
-    await expect(page.getByText(/Resolved and closed by support — Re-adjudicated and approved\./)).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Resolution remarks: Re-adjudicated and approved.')).toBeVisible();
   });
 
   test('no details means no first message, only "Ticket opened"', async ({ page }) => {
@@ -261,8 +262,8 @@ test.describe('Raise a grievance (submit)', () => {
     expect(api.uploads).toBe(1);
     expect(api.submits[0]).toMatchObject({
       documents: [{ name: 'bill.pdf', document_id: 'doc-1', document_type: 'OTHER', originalname: 'bill.pdf', verification_status: 'PENDING', filetype: 'application/pdf', filesize: '15' }],
+      document_ids: ['doc-1'],
     });
-    expect(api.submits[0]).not.toHaveProperty('document_ids');
   });
 
   test('reason is required; "Other" also needs a description', async ({ page }) => {
@@ -490,13 +491,52 @@ test.describe('Tickets come from the API', () => {
     await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
     await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
-    await expect(page.getByText(/Resolved and closed by support — Claim re-adjudicated and approved\./)).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Resolution remarks: Claim re-adjudicated and approved.')).toBeVisible();
     await expect(page.locator('#g-reply')).toHaveCount(0);
     await expect(page.getByText(/reopen/i)).toHaveCount(0);
     await expect(page.getByText('Want to take it further?')).toBeVisible();
     // Nothing can be raised on a claim that already has a ticket, even a closed one.
     await page.getByRole('button', { name: 'OPD-2026-00354' }).click();
     await expect(page.getByRole('button', { name: 'Raise a grievance' })).toHaveCount(0);
+  });
+
+  test('a closed ticket displays the support resolution remarks card and thread remark even when matching member words', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed(
+      { claim_id: 'OPD-2026-00354', dispute_status: 'Closed', final_reason: 'hii', last_message_sender: 'SUPPORT_EXECUTIVE' },
+      [
+        { sender_type: 'MEMBER', message_text: 'hii' },
+        { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'jii' },
+      ],
+    );
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
+    await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Resolution remarks: hii')).toBeVisible();
+  });
+
+  test('a closed ticket displays both resolution remarks and closure remarks when support enters both', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed(
+      {
+        claim_id: 'OPD-2026-00354',
+        dispute_status: 'Closed',
+        final_reason: 'Resolution remarks: Claim approved for 5000\nClosure remarks: Credited via NEFT and closed',
+        last_message_sender: 'SUPPORT_EXECUTIVE',
+      },
+      [
+        { sender_type: 'MEMBER', message_text: 'My claim was rejected' },
+        { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'We are investigating' },
+      ],
+    );
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
+    await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Resolution remarks: Claim approved for 5000')).toBeVisible();
+    await expect(page.getByText('Closure remarks: Credited via NEFT and closed')).toBeVisible();
   });
 
   test('if the ticket list cannot be loaded the page still works and shows the claims', async ({ page }) => {
@@ -716,42 +756,38 @@ test.describe('Mark resolved (userResolve)', () => {
     return { api, d };
   };
 
-  test('closes the ticket through the API: no text sent, shown as resolved by you, no reply box, no reopen', async ({ page }) => {
+  test('resolves the ticket through the API: sends RESOLVED, displays resolution banner and keeps chatbox active', async ({ page }) => {
     const { api, d } = await openTicket(page);
     await page.getByRole('button', { name: 'Mark resolved' }).click();
-    await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toEqual([d.name]);
-    // The ticket is identified by name with dispute_status CLOSE and final_reason.
     expect(api.resolvePayloads[0]).toEqual({
       resourceType: 'Dispute',
       name: d.name,
-      dispute_status: 'CLOSE',
-      final_reason: 'Claim amount verified against policy benefits. Awaiting support executive response.',
+      dispute_status: 'RESOLVED',
+      final_reason: 'Resolved by member',
     });
     expect(api.replies).toEqual([]);
-    await expect(page.getByText('You marked this resolved on')).toBeVisible();
-    await expect(page.getByText('Marked resolved by you')).toBeVisible();
-    await expect(page.locator('#g-reply')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Mark resolved' })).toHaveCount(0);
-    await expect(page.getByText(/reopen/i)).toHaveCount(0);
-    await expect(page.getByText('Want to take it further?').or(page.getByText(/closed for good/))).toBeVisible();
+    await expect(page.getByText('Resolution remarks:')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Close Ticket' })).toBeVisible();
+    await expect(page.getByText(/You can reply below, or close this ticket for good/)).toBeVisible();
   });
 
-  test('is offered while the ticket is still with support, and the claim row then reads closed', async ({ page }) => {
+  test('is offered while the ticket is still with support, and resolves properly', async ({ page }) => {
     const { api } = await openTicket(page, new FakeApi(), 'Awaiting executive response');
     await page.getByRole('button', { name: 'Mark resolved' }).click();
-    await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toHaveLength(1);
   });
 
-  test('stays closed after a refresh (state comes from the API, not the browser)', async ({ page }) => {
+  test('stays resolved after a refresh (state comes from the API, not the browser)', async ({ page }) => {
     const { api } = await openTicket(page);
     await page.getByRole('button', { name: 'Mark resolved' }).click();
-    await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     await page.reload();
     await expect(claimsSection(page).getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
-    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
-    await expect(page.getByText('You marked this resolved on')).toBeVisible({ timeout: 20000 });
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: /Resolved/ }).click();
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toHaveLength(1);
   });
 
@@ -772,10 +808,10 @@ test.describe('Mark resolved (userResolve)', () => {
     api.failResolve = 'no dispute named X';
     await page.getByRole('button', { name: 'Mark resolved' }).click();
     await expect(page.getByRole('alert')).toContainText('no dispute named X', { timeout: 20000 });
-    await expect(page.locator('#g-reply')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Mark resolved' })).toBeVisible();
     api.failResolve = null;
     await page.getByRole('button', { name: 'Mark resolved' }).click();
-    await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toHaveLength(2);
   });
 
@@ -785,15 +821,15 @@ test.describe('Mark resolved (userResolve)', () => {
     await openTicket(page, api);
     const button = page.getByRole('button', { name: 'Mark resolved' });
     await button.dblclick();
-    await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toHaveLength(1);
   });
 
   test('a reply typed but not sent does not block closing', async ({ page }) => {
     const { api } = await openTicket(page);
-    await page.fill('#g-reply', 'half a thought');
+    await page.getByPlaceholder('Write your reply').fill('half a thought');
     await page.getByRole('button', { name: 'Mark resolved' }).click();
-    await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toEqual([]);
     expect(api.resolves).toHaveLength(1);
   });

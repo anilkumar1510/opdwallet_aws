@@ -9,6 +9,7 @@ import {
   BenefitConfigDto,
 } from './wallet.dto';
 import { FamilyConsumption, TransactionDirection, Wallet, WalletActivityTotals, WalletCategoryBalance, WalletTotals, WalletTransaction } from './wallet.model';
+import { EnrichedWalletPassbookItem } from './wallet-passbook.model';
 
 /**
  * Every URL this resource uses, beside the shapes they return. Changing an
@@ -59,6 +60,8 @@ function toCategory(
     annualLimit: typeof config?.annualLimit === 'number' ? money(config.annualLimit) : null,
     perClaimLimit:
       typeof config?.perClaimLimit === 'number' ? money(config.perClaimLimit) : null,
+    cashless: true,
+    claims: true,
   };
 }
 
@@ -140,5 +143,40 @@ export function summarise(rows: readonly WalletTransactionDto[]): WalletActivity
     debits: money(debits),
     net: money(credits - debits),
     counted: rows.length,
+  };
+}
+
+export function passbookItemToWalletTransaction(
+  item: EnrichedWalletPassbookItem,
+): WalletTransaction {
+  return {
+    id: item.id,
+    reference: item.referenceId,
+    direction: item.isCredit ? TransactionDirection.Credit : TransactionDirection.Debit,
+    amount: money(item.amount),
+    category: item.category,
+    categoryLabel: item.categoryLabel,
+    description: `${item.transactionType} • ${item.categoryLabel}`,
+    occurredAt: item.occurredAt,
+    isReversed: item.isReversed ?? false,
+    balanceAfter: money(item.updatedBalance),
+    transactionType: item.transactionType,
+  };
+}
+
+export function summarisePassbookItems(
+  items: readonly EnrichedWalletPassbookItem[],
+): WalletActivityTotals {
+  let credits = 0;
+  let debits = 0;
+  for (const item of items) {
+    if (item.isCredit) credits += item.amount;
+    else debits += item.amount;
+  }
+  return {
+    credits: money(credits),
+    debits: money(debits),
+    net: money(credits - debits),
+    counted: items.length,
   };
 }

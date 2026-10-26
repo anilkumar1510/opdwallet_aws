@@ -173,3 +173,33 @@ The system SHALL provide a reusable category coverage banner component (`opd-cov
 #### Scenario: Detailed category coverage layout for vision
 - **WHEN** the vision landing page renders `<opd-coverage-banner [category]="BenefitCategory.Vision">`
 - **THEN** it renders the detailed definition-list layout showing dynamic eligible pool amount (or wallet annual limit fallback), frequency, covered item types, and the partner coupon disclaimer
+
+### Requirement: Category Consumption and Dynamic Pool Balance Consolidation
+The system SHALL query `opd_consumption_cycle` for the member's patient ID, consolidate multiple consumption transactions per category where `to_status === 'CONSUMED'`, compute consumed amounts for each benefit category and benefit pool, and dynamically deduct consumption from allocated balances across the wallet total, pools breakdown, and coverage banner.
+
+#### Scenario: Multiple consumptions consolidated for a category
+- **WHEN** a member has multiple consumption cycles recorded for the same category (such as multiple settled in-clinic claims)
+- **THEN** the system consolidates and sums all delta amounts where `to_status === 'CONSUMED'`, resulting in the total consumed amount for that category
+
+#### Scenario: Pool available balance reflects consolidated category consumption
+- **WHEN** categories assigned to a pool incur consumption
+- **THEN** each category in the pool breakdown displays its consolidated used amount, and the pool's available balance is calculated as `Math.max(0, pool.annual_limit - pool.consumed)`
+
+#### Scenario: Category coverage banner displays remaining and total balance
+- **WHEN** the member views a service landing page with `<opd-coverage-banner>`
+- **THEN** the banner displays the remaining available amount out of the total limit formatted as `₹{available} / ₹{annualLimit} left this year`
+
+#### Scenario: Consumed amount formatted with negative sign
+- **WHEN** a category, pool, or wallet stat tile has a non-zero consumed amount
+- **THEN** the consumed amount is displayed with a negative sign (e.g. `-₹6,000` or `-₹11,000`)
+
+### Requirement: Health Benefits Cards Filtered by Cashless Mode
+The system SHALL filter the Health Benefits / Cashless Benefits grid on the dashboard so that a category benefit card (`opd-benefit-card`) is rendered only if `cashless === true` for that category in the policy version, and any category where `cashless === false` is excluded from the UI.
+
+#### Scenario: Category with cashless enabled rendered on dashboard
+- **WHEN** a category has `cashless === true` in the active policy version
+- **THEN** its benefit card is rendered in the Health Benefits grid on the dashboard
+
+#### Scenario: Category with cashless disabled excluded from dashboard
+- **WHEN** a category has `cashless === false` in the active policy version (such as claims-only Pharmacy)
+- **THEN** its benefit card is excluded from the Health Benefits grid on the dashboard

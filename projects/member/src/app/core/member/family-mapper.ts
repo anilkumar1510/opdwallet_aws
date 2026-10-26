@@ -69,6 +69,7 @@ export interface FamilyMemberResource {
   user_name?: string;
   relationship?: string;
   employee_id?: string;
+  employeeId?: string;
 }
 
 function toGender(value: string | undefined): 'MALE' | 'FEMALE' | 'OTHER' | null {
@@ -103,16 +104,37 @@ function initialsOf(firstName: string, lastName: string): string {
   return initials.trim() || '?';
 }
 
-export function toFamilyMember(resource: FamilyMemberResource, userId: string) {
+/**
+ * Maps a single GET_FAMILY_LIST (`user_relationship_mapping`) resource to a Member domain entity.
+ *
+ * NOTE FOR DEVELOPERS:
+ * In GET_FAMILY_LIST responses, the backend leaves `uhId: null` on the signed-in primary member's
+ * record (where relationship_code is empty or REL001/self). To ensure the primary member still carries
+ * their valid UHID, `configUhId` (retrieved from GET_MY_CONFIG via UserInfoStore) is provided as
+ * an authenticated fallback.
+ *
+ * @param resource Raw API resource from user_relationship_mapping
+ * @param userId Authenticated user's mapped ID
+ * @param configUhId Canonical UHID from GET_MY_CONFIG used when resource.uhId is missing on Self
+ */
+export function toFamilyMember(
+  resource: FamilyMemberResource,
+  userId: string,
+  configUhId?: string | null,
+) {
   const { firstName, lastName } = splitName(resource.mapped_name);
   const fullName = [firstName, lastName].filter(Boolean).join(' ');
   // The API omits relationship_code on the signed-in member's own record.
-  const isSelf = !resource.relationship_code || resource.mapped_id === userId || resource.relationship_code?.trim().toLowerCase() === 'self';
+  const isSelf =
+    !resource.relationship_code ||
+    resource.mapped_id === userId ||
+    resource.relationship_code?.trim().toLowerCase() === 'self' ||
+    resource.relationship_code?.trim().toUpperCase() === 'REL001';
   const relationship = isSelf ? Relationship.Self : toRelationship(resource.relationship_code);
 
   return {
     id: resource.id,
-    memberId: resource.mapped_id,
+    memberId: resource.mapped_id || resource.user_id || resource.id,
     firstName,
     lastName,
     fullName: fullName || resource.mapped_name || resource.mapped_id || 'Member',
@@ -122,7 +144,8 @@ export function toFamilyMember(resource: FamilyMemberResource, userId: string) {
     relationship,
     relationshipCode: isSelf ? 'self' : (resource.relationship_code?.trim().toLowerCase() || 'self'),
     isPrimary: relationship === Relationship.Self,
-    uhid: resource.uhId?.trim() || null,
+    uhid: resource.uhId?.trim() || (isSelf ? (configUhId?.trim() || null) : null),
+    employeeId: resource.employee_id?.trim() || resource.employeeId?.trim() || null,
     dateOfBirth: toDob(resource.dob),
     gender: toGender(resource.gender_id),
   };

@@ -107,12 +107,18 @@ function buildFootnote(
               <dt class="text-ink-700">Eligible amount</dt>
               <dd class="font-medium text-ink-900">
                 @if (c.annualLimit > 0) {
-                  ₹{{ c.annualLimit | number }}
+                  ₹{{ c.available | number }} <span class="text-xs font-normal text-ink-500">/ ₹{{ c.annualLimit | number }}</span>
                 } @else {
                   No annual limit
                 }
               </dd>
             </div>
+            @if (c.consumed > 0) {
+              <div class="flex justify-between">
+                <dt class="text-ink-700">Consumed</dt>
+                <dd class="font-semibold text-danger-700">-₹{{ c.consumed | number }}</dd>
+              </div>
+            }
             <div class="flex justify-between">
               <dt class="text-ink-700">Frequency</dt>
               <dd class="font-medium text-ink-900">{{ c.frequency }}</dd>
@@ -134,11 +140,16 @@ function buildFootnote(
           </div>
           @if (c.annualLimit > 0) {
             <p class="mt-1 text-2xl font-bold text-[#034DA2]">
-              ₹{{ c.annualLimit | number }} <span class="text-sm font-normal text-ink-500">left this year</span>
+              ₹{{ c.available | number }} <span class="text-base font-normal text-ink-500">/ ₹{{ c.annualLimit | number }}</span> <span class="text-sm font-normal text-ink-500">left this year</span>
             </p>
           } @else {
             <p class="mt-1 text-base font-semibold text-ink-500">
               No annual limit allocated for this
+            </p>
+          }
+          @if (c.consumed > 0) {
+            <p class="mt-1 text-xs text-ink-600">
+              <span class="font-medium text-ink-700">Consumed:</span> <span class="font-semibold text-danger-700">-₹{{ c.consumed | number }}</span>
             </p>
           }
           @if (c.poolName) {
@@ -214,8 +225,10 @@ export class CoverageBannerComponent {
     }
 
     const hasPool = Boolean(poolCode && (pool || poolName));
-    const walletAnnualLimit = this.policyStore.walletTotal().allocated.amount ?? 0;
-    const annualLimit = hasPool ? (pool?.allocated?.amount ?? walletAnnualLimit) : walletAnnualLimit;
+    const walletTotal = this.policyStore.walletTotal();
+    const annualLimit = hasPool ? (pool?.allocated?.amount ?? walletTotal.allocated.amount) : walletTotal.allocated.amount;
+    const available = hasPool ? (pool?.available?.amount ?? walletTotal.available.amount) : walletTotal.available.amount;
+    const consumed = hasPool ? (pool?.consumed?.amount ?? walletTotal.consumed.amount) : walletTotal.consumed.amount;
 
     const noun = this.unitNoun() || defaultUnitNoun(this.category());
     const defaultTitle =
@@ -239,6 +252,8 @@ export class CoverageBannerComponent {
       poolCode: hasPool ? (pool?.code || poolCode) : null,
       poolName: hasPool ? poolName : null,
       annualLimit,
+      available,
+      consumed,
       footnote,
       frequency,
       coveredText,

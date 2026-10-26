@@ -44,12 +44,15 @@ export interface DisputeSubmitPayload {
   readonly documents?: readonly DisputeDocument[];
   /** Optional array of raw document UUIDs for Habit Health / Twenty sync. */
   readonly docidS?: readonly string[];
+  readonly document_ids?: readonly string[];
+  readonly documentIds?: readonly string[];
 }
 
 /** One supporting document on a dispute (uploaded to DMS first). */
 export interface DisputeDocument {
   readonly name: string;
   readonly document_id: string;
+  readonly id?: string;
   readonly document_type: 'INVOICE' | 'PRESCRIPTION' | 'REPORT' | 'OTHER';
   readonly originalname: string;
   readonly verification_status: 'PENDING';
@@ -62,6 +65,7 @@ export function toDisputeDocument(file: File, documentId: string, uploadedName: 
   return {
     name: uploadedName || file.name,
     document_id: documentId,
+    id: documentId,
     document_type: 'OTHER',
     originalname: file.name,
     verification_status: 'PENDING',
@@ -98,6 +102,8 @@ export interface DisputeRecord {
   readonly createdAt: Date;
   readonly modifiedAt: Date;
   readonly finalReason: string | null;
+  readonly resolutionRemarks?: string | null;
+  readonly closureRemarks?: string | null;
   readonly lastMessageSender: string | null;
   /** Documents the member attached when raising it. */
   readonly documents: readonly { readonly documentId: string; readonly name: string }[];
@@ -202,6 +208,8 @@ export class DisputeApi {
         ? {
             documents: input.documents,
             docidS: input.documents.map((d) => d.document_id).filter(Boolean),
+            document_ids: input.documents.map((d) => d.document_id).filter(Boolean),
+            documentIds: input.documents.map((d) => d.document_id).filter(Boolean),
           }
         : {}),
     };
@@ -277,10 +285,31 @@ export class DisputeApi {
    * in the resource's `message_text` (commas and colons included; the backend no
    * longer reads `args`). The backend flips the ticket back to support.
    */
-  reply(dispute: { name: string; id: string }, text: string): Promise<ReplyResult> {
+  reply(
+    dispute: { name: string; id: string },
+    text: string,
+    documents?: readonly { readonly documentId: string; readonly name: string }[],
+    documentIds?: readonly string[],
+  ): Promise<ReplyResult> {
+    const payload: Record<string, unknown> = {
+      resourceType: 'DisputeChat',
+      dispute_id: dispute.id,
+      message_text: text,
+    };
+    if (documents && documents.length > 0) {
+      payload['documents'] = documents.map((d) => ({
+        document_id: d.documentId,
+        originalname: d.name,
+        name: d.name,
+      }));
+    }
+    if (documentIds && documentIds.length > 0) {
+      payload['docidS'] = documentIds;
+      payload['documentIds'] = documentIds;
+    }
     return this.act(
       DISPUTE_API.chatResource,
-      { resourceType: 'DisputeChat', dispute_id: dispute.id, message_text: text },
+      payload,
       'userReply',
       undefined,
       'We could not send your reply. Please try again.',
@@ -294,10 +323,8 @@ export class DisputeApi {
       {
         resourceType: 'Dispute',
         name: dispute.name,
-        dispute_status: dispute.disputeStatus || 'CLOSE',
-        final_reason:
-          dispute.finalReason ||
-          'Claim amount verified against policy benefits. Awaiting support executive response.',
+        dispute_status: dispute.disputeStatus || 'RESOLVED',
+        final_reason: dispute.finalReason || 'Resolved by member',
       },
       'userResolve',
       undefined,
@@ -308,7 +335,7 @@ export class DisputeApi {
   /** One signed `dispute` action on an existing ticket. */
   private async act(
     resource: string,
-    payload: Record<string, string>,
+    payload: Record<string, unknown>,
     action: string,
     args: string | undefined,
     failure: string,
@@ -416,9 +443,11 @@ export class DisputeApi {
           },
         ),
       );
-      const row = response.body?.resource?.[0];
-      if (response.body?.errCode === 0 && row?.document_id) {
-        return { ok: true, documentId: row.document_id, name: row.file_name ?? file.name };
+      const rawRes = response.body?.resource;
+      const row = Array.isArray(rawRes) ? rawRes[0] : (rawRes as any);
+      const docId = row?.document_id || row?.id || row?.documentId;
+      if (response.body?.errCode === 0 && docId) {
+        return { ok: true, documentId: String(docId), name: row?.file_name ?? row?.name ?? file.name };
       }
       return { ok: false, message: response.body?.message || `Could not upload ${file.name}.` };
     } catch (error) {
@@ -434,22 +463,76 @@ function toDate(raw: unknown): Date {
   return Number.isNaN(d.getTime()) ? new Date(0) : d;
 }
 
+export function parseDisputeRemarks(
+  raw: string | null | undefined,
+  extraData?: Record<string, any>,
+): {
+  resolutionRemarks: string | null;
+  closureRemarks: string | null;
+} {
+  let resolutionRemarks = (extraData?.['resolution_remarks'] ?? extraData?.['resolutionRemarks'])
+    ? String(extraData['resolution_remarks'] ?? extraData['resolutionRemarks']).trim()
+    : null;
+  let closureRemarks = (extraData?.['closure_remarks'] ?? extraData?.['closureRemarks'])
+    ? String(extraData['closure_remarks'] ?? extraData['closureRemarks']).trim()
+    : null;
+
+  if (raw) {
+    const trimmed = raw.trim();
+    const resMatch = trimmed.match(
+      /Resolution remarks:\s*([\s\S]*?)(?=\n\s*Closure remarks:|$)/i,
+    );
+    const cloMatch = trimmed.match(/Closure remarks:\s*([\s\S]*?)$/i);
+
+    if (resMatch && cloMatch) {
+      if (!resolutionRemarks) resolutionRemarks = resMatch[1].trim();
+      if (!closureRemarks) closureRemarks = cloMatch[1].trim();
+    } else if (resMatch && !resolutionRemarks) {
+      resolutionRemarks = resMatch[1].trim();
+    } else if (cloMatch && !closureRemarks) {
+      closureRemarks = cloMatch[1].trim();
+    }
+  }
+
+  return { resolutionRemarks, closureRemarks };
+}
+
 function toRecord(row: Record<string, any>): DisputeRecord | null {
   const name = row['name'] ?? row['ticket_id'];
   if (!name || !row['id']) return null;
+  const rawDocs = Array.isArray(row['documents']) ? row['documents'] : [];
+  const rawDocIds = Array.isArray(row['docidS']) ? row['docidS'] : (Array.isArray(row['documentIds']) ? row['documentIds'] : []);
+  const documents: Array<{ documentId: string; name: string }> = [];
+  for (const d of rawDocs) {
+    const docId = d?.document_id || d?.id || d?.documentId;
+    if (docId) {
+      documents.push({ documentId: String(docId), name: String(d.originalname || d.name || 'Document') });
+    }
+  }
+  for (const id of rawDocIds) {
+    if (typeof id === 'string' && id.trim() && !documents.some((d) => d.documentId === id.trim())) {
+      documents.push({ documentId: id.trim(), name: 'Document' });
+    }
+  }
+
+  const rawFinalReason = (row['final_reason'] ?? row['finalReason']) ? String(row['final_reason'] ?? row['finalReason']) : null;
+  const extraData = row['extra_data'] && typeof row['extra_data'] === 'object' ? row['extra_data'] : undefined;
+  const fallbackExtra = row['resolution_remarks'] || row['closure_remarks'] || row['resolutionRemarks'] || row['closureRemarks'] ? row : undefined;
+  const { resolutionRemarks, closureRemarks } = parseDisputeRemarks(rawFinalReason, extraData ?? fallbackExtra);
+
   return {
     name: String(name),
     id: String(row['id']),
     claimId: String(row['claim_id'] ?? ''),
     reason: String(row['selected_reason'] ?? ''),
-    status: String(row['dispute_status'] ?? ''),
+    status: String(row['dispute_status'] ?? row['disputeStatus'] ?? row['status'] ?? ''),
     createdAt: toDate(row['g_creation_time']),
     modifiedAt: toDate(row['g_modify_time'] ?? row['g_creation_time']),
-    finalReason: row['final_reason'] ? String(row['final_reason']) : null,
-    lastMessageSender: row['last_message_sender'] ? String(row['last_message_sender']) : null,
-    documents: (Array.isArray(row['documents']) ? row['documents'] : [])
-      .filter((d: any) => d?.document_id)
-      .map((d: any) => ({ documentId: String(d.document_id), name: String(d.originalname || d.name || 'Document') })),
+    finalReason: rawFinalReason,
+    resolutionRemarks,
+    closureRemarks,
+    lastMessageSender: (row['last_message_sender'] ?? row['lastMessageSender']) ? String(row['last_message_sender'] ?? row['lastMessageSender']) : null,
+    documents,
   };
 }
 

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { environment } from '../../../environments/environment';
 import { AppService } from '../http/api.service';
 import { resolveApiUrl } from '../http/api.interceptor';
 
@@ -116,6 +117,17 @@ function toInstant(value: unknown): Date | null {
   const parsed = /^\d+$/.test(raw) ? new Date(Number(raw)) : new Date(raw);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
+/**
+ * The gateway's `redirectURL` is usually a path (`/payment-gateway/api/v1/razorpay`).
+ * It is resolved against the API base, not the page's origin: loaded as a federated
+ * module, this page runs on the host app's origin, whose server does not route
+ * `/payment-gateway/api` to the backend.
+ */
+function absoluteCallback(callback: string): string {
+  if (/^https?:\/\//i.test(callback)) return callback;
+  const base = (environment.apiBaseUrl ?? '').replace(/\/+$/, '') || window.location.origin;
+  return `${base}/${callback.replace(/^\/+/, '')}`;
+}
 
 function firstRow(response: unknown): any {
   const parsed = typeof response === 'string' ? JSON.parse(response) : response;
@@ -221,6 +233,7 @@ export class PaymentGatewayService {
         // Redirect mode: Razorpay posts the result to the gateway, which verifies it.
         ...(callback
           ? { callback_url: resolveApiUrl(callback), redirect: true }
+          // ? { callback_url: absoluteCallback(callback), redirect: true }
           : {}),
       });
     } catch (error) {

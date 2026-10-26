@@ -67,4 +67,54 @@ assert.equal(unknown.initials, '?');
 assert.equal(unknown.dateOfBirth, null);
 assert.equal(unknown.gender, null);
 
+// Test fallback UHID from GET_MY_CONFIG when GET_FAMILY_LIST omits uhId
+const selfWithFallback = toFamilyMember(
+  {
+    id: 'r4',
+    mapped_id: 'MEM35637',
+    mapped_name: 'Shivam Kumar',
+    relationship_code: '',
+    uhId: '',
+  },
+  'MEM35637',
+  'CONFIG_UHID_999',
+);
+assert.equal(selfWithFallback.uhid, 'CONFIG_UHID_999');
+
+const depWithFallback = toFamilyMember(
+  {
+    id: 'r5',
+    mapped_id: 'MEM999',
+    mapped_name: 'Ramesh Kumar',
+    relationship_code: 'father',
+    uhId: '',
+  },
+  'MEM35637',
+  'CONFIG_UHID_999',
+);
+assert.equal(depWithFallback.uhid, null);
+
+// Test employeeId mapping (from employee_id and employeeId)
+const memberWithSnakeEmpId = toFamilyMember(
+  {
+    id: 'r6',
+    mapped_id: 'MEM101',
+    mapped_name: 'Alex Doe',
+    employee_id: 'EMP-12345',
+  },
+  'MEM101',
+);
+assert.equal(memberWithSnakeEmpId.employeeId, 'EMP-12345');
+
+const memberWithCamelEmpId = toFamilyMember(
+  {
+    id: 'r7',
+    mapped_id: 'MEM102',
+    mapped_name: 'Jane Doe',
+    employeeId: 'EMP-67890',
+  },
+  'MEM102',
+);
+assert.equal(memberWithCamelEmpId.employeeId, 'EMP-67890');
+
 console.log('family-mapper.check: ok');

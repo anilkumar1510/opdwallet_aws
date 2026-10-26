@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ClaimsStore } from '../../core/claims/claims.store';
 import { ClaimCategory } from '../../core/claims/claim.mapper';
 import { claimRulesFor } from '../../core/claims/claim-rules';
+import { Copay, splitPayment } from '../../core/domain/payment-split';
 import {
   DentalSubType,
   DocSlotKey,
@@ -157,23 +158,23 @@ const STEPS = [
                   </p>
                   <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                      <label for="bankHolder" class="mb-1 block text-sm font-medium text-ink-700">Account holder name</label>
+                      <label for="bankHolder" class="mb-1 block text-sm font-medium text-ink-700">Account holder name <span class="text-danger-700">*</span></label>
                       <input id="bankHolder" name="bankHolder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankHolder()" (ngModelChange)="bankHolder.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div>
-                      <label for="bankAccount" class="mb-1 block text-sm font-medium text-ink-700">Account number</label>
+                      <label for="bankAccount" class="mb-1 block text-sm font-medium text-ink-700">Account number <span class="text-danger-700">*</span></label>
                       <input id="bankAccount" name="bankAccount" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankAccount()" (ngModelChange)="bankAccount.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div>
-                      <label for="bankIfsc" class="mb-1 block text-sm font-medium text-ink-700">IFSC code</label>
+                      <label for="bankIfsc" class="mb-1 block text-sm font-medium text-ink-700">IFSC code <span class="text-danger-700">*</span></label>
                       <input id="bankIfsc" name="bankIfsc" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm uppercase focus:border-brand-500 focus:outline-none" [ngModel]="bankIfsc()" (ngModelChange)="bankIfsc.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div class="sm:col-span-2">
-                      <label for="bankName" class="mb-1 block text-sm font-medium text-ink-700">Bank name</label>
+                      <label for="bankName" class="mb-1 block text-sm font-medium text-ink-700">Bank name <span class="text-danger-700">*</span></label>
                       <input id="bankName" name="bankName" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankName()" (ngModelChange)="bankName.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div class="sm:col-span-2">
-                      <span class="mb-1 block text-sm font-medium text-ink-700">Cancelled cheque</span>
+                      <span class="mb-1 block text-sm font-medium text-ink-700">Cancelled cheque <span class="text-danger-700">*</span></span>
                       <input type="file" class="sr-only" accept="image/*,.pdf" id="cheque" (change)="onChequeChosen($event)" />
                       <label for="cheque" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-5 text-center transition-colors hover:border-[#0F5FDC]">
                         <span class="block font-medium text-[#0B2C63]">{{ chequeFile() ? 'Replace cancelled cheque' : 'Upload cancelled cheque' }}</span>
@@ -199,7 +200,7 @@ const STEPS = [
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label for="patient" class="mb-1 block text-sm font-medium text-ink-700">Patient</label>
+                  <label for="patient" class="mb-1 block text-sm font-medium text-ink-700">Patient <span class="text-danger-700">*</span></label>
                   <select id="patient" name="patient" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [disabled]="family.loading()" [ngModel]="patientId()" (ngModelChange)="patientId.set($event)">
                     @if (family.loading()) {
                       <option value="" disabled>Loading…</option>
@@ -211,7 +212,7 @@ const STEPS = [
                 </div>
 
                 <div>
-                  <label for="category" class="mb-1 block text-sm font-medium text-ink-700">Category</label>
+                  <label for="category" class="mb-1 block text-sm font-medium text-ink-700">Category <span class="text-danger-700">*</span></label>
                   <select id="category" name="category" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [disabled]="categoriesLoading()" [ngModel]="category()" (ngModelChange)="category.set($event)">
                     <option value="">Select a category</option>
                     @if (categoriesLoading()) {
@@ -250,7 +251,7 @@ const STEPS = [
                 </div>
 
                 <div>
-                  <label for="treatmentDate" class="mb-1 block text-sm font-medium text-ink-700">Treatment date</label>
+                  <label for="treatmentDate" class="mb-1 block text-sm font-medium text-ink-700">Treatment date <span class="text-danger-700">*</span></label>
                   <input id="treatmentDate" name="treatmentDate" type="date" [max]="today" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="treatmentDate()" (ngModelChange)="treatmentDate.set($event)" />
                 </div>
 
@@ -259,13 +260,13 @@ const STEPS = [
                      vision. Second location is a PLACEHOLDER param. -->
                 @for (field of locationFields(); track field.key) {
                   <div>
-                    <label [attr.for]="field.key" class="mb-1 block text-sm font-medium text-ink-700">{{ field.label }}</label>
+                    <label [attr.for]="field.key" class="mb-1 block text-sm font-medium text-ink-700">{{ field.label }}{{ field.required ? ' *' : '' }}</label>
                     <input [id]="field.key" [name]="field.key" [placeholder]="field.placeholder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="locationValue(field.key)" (ngModelChange)="setLocation(field.key, $event)" [ngModelOptions]="{ standalone: true }" />
                   </div>
                 }
 
                 <div>
-                  <label for="billAmount" class="mb-1 block text-sm font-medium text-ink-700">Bill amount</label>
+                  <label for="billAmount" class="mb-1 block text-sm font-medium text-ink-700">Bill amount <span class="text-danger-700">*</span></label>
                   <input id="billAmount" name="billAmount" type="number" min="1" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="billAmount()" (ngModelChange)="billAmount.set($event)" />
                 </div>
 
@@ -310,7 +311,7 @@ const STEPS = [
                         <span class="text-sm font-medium text-[#0B2C63]">Uploading…</span>
                       </span>
                     } @else {
-                      <span class="block font-medium text-[#0B2C63]">{{ slot.label }}</span>
+                      <span class="block font-medium text-[#0B2C63]">{{ slot.label }}{{ slot.requirement === 'required' ? ' *' : '' }}</span>
                       <span class="mt-1 block text-xs" [class.text-danger-700]="slot.requirement === 'required'" [class.text-ink-500]="slot.requirement !== 'required'">{{ slot.requirement === 'required' ? 'Required' : 'Optional' }} — PDF or photos, up to 5 MB each</span>
                     }
                   </label>
@@ -359,9 +360,9 @@ const STEPS = [
               </dl>
             </section>
 
-            <!-- Payment breakdown — the money rules. Per-claim limit is known;
-                 co-payment and per-transaction limit are confirmed at
-                 adjudication (no client-side figure). -->
+            <!-- Payment breakdown — co-payment first, then the per claim limit.
+                 The limit is real; the co-payment is real when the wallet
+                 config sends it, otherwise a placeholder. -->
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-4 text-base font-semibold text-[#0E51A2] lg:text-lg">Payment breakdown</h2>
               @if (estimate(); as est) {
@@ -371,35 +372,33 @@ const STEPS = [
                     <dd class="font-medium text-ink-900">{{ amount(est.bill) }}</dd>
                   </div>
                   <div class="flex justify-between gap-3">
-                    <dt class="text-ink-700">Per-claim limit</dt>
-                    <dd class="font-medium text-ink-900">{{ est.perClaim !== null ? amount(est.perClaim) : 'No limit' }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-3">
                     <dt class="text-ink-700">
-                      Per-transaction limit
-                      @if (!est.txnReal) {
-                        <span class="text-[11px] text-warning-700">· placeholder</span>
-                      }
-                    </dt>
-                    <dd class="font-medium text-ink-900">{{ est.perTxn !== null ? amount(est.perTxn) : 'No limit' }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
-                    <dt class="text-ink-700">Eligible amount</dt>
-                    <dd class="font-medium text-ink-900">{{ amount(est.eligible) }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-3">
-                    <dt class="text-ink-700">
-                      Co-payment{{ est.copayMode === 'PERCENT' ? ' (' + est.copayValue + '%)' : '' }}
+                      Co-payment{{ est.copay.mode === 'PERCENT' ? ' (' + est.copay.value + '%)' : '' }}
+                      <span class="text-xs text-ink-500">· paid by you</span>
                       @if (!est.copayReal) {
                         <span class="text-[11px] text-warning-700">· placeholder</span>
                       }
                     </dt>
                     <dd class="font-medium text-danger-700">− {{ amount(est.copayAmount) }}</dd>
                   </div>
-                  <div class="flex justify-between gap-3">
-                    <dt class="text-ink-700">Reimbursable amount</dt>
-                    <dd class="font-medium text-ink-900">{{ amount(est.reimbursable) }}</dd>
+                  <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
+                    <dt class="text-ink-700">Amount after co-payment</dt>
+                    <dd class="font-medium text-ink-900">{{ amount(est.afterCopay) }}</dd>
                   </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Per claim limit</dt>
+                    <dd class="font-medium text-ink-900">{{ est.perClaim !== null ? amount(est.perClaim) : 'No limit' }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Reimbursable amount <span class="text-xs text-ink-500">· the lower of the two</span></dt>
+                    <dd class="font-medium text-success-700">{{ amount(est.walletPays) }}</dd>
+                  </div>
+                  @if (est.aboveLimit > 0) {
+                    <div class="flex justify-between gap-3">
+                      <dt class="text-ink-700">Above the limit <span class="text-xs text-ink-500">· not reimbursed</span></dt>
+                      <dd class="font-medium text-ink-900">{{ amount(est.aboveLimit) }}</dd>
+                    </div>
+                  }
                   <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
                     <dt class="font-semibold text-ink-900">Estimated wallet deduction</dt>
                     <dd class="font-semibold text-success-700">{{ est.balanceKnown ? amount(est.walletDeduction) : '—' }}</dd>
@@ -411,7 +410,7 @@ const STEPS = [
                 </dl>
                 <p class="mt-3 text-xs text-ink-500">
                   Estimates.
-                  @if (!est.copayReal || !est.txnReal) {
+                  @if (!est.copayReal) {
                     Rows marked <span class="text-warning-700">placeholder</span> are not from this
                     policy yet.
                   }
@@ -555,6 +554,61 @@ export class NewClaimPage {
 
 
   protected readonly today = new Date().toISOString().slice(0, 10);
+
+  /**
+   * Configured claim submission expiry window (in days) from the active policy version (default 45 days).
+   * Restricts treatment date selection so users cannot file claims after policy expiry.
+   */
+  protected readonly claimExpiryDays = computed<number>(() => {
+    const version = this.policyStore.version();
+    const expiry = version?.claim_expiry;
+    return typeof expiry === 'number' && expiry > 0 ? expiry-1 : 45;
+  });
+
+  /**
+   * Minimum allowable treatment date (today - claimExpiryDays) formatted as YYYY-MM-DD.
+   * Bound to [min] on input#treatmentDate to disable older dates in the datepicker.
+   */
+  protected readonly minTreatmentDate = computed<string>(() => {
+    const days = this.claimExpiryDays();
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
+  /** Whether the user has entered a non-positive bill amount (<= 0). */
+  protected readonly isNegativeOrZeroBill = computed<boolean>(() => {
+    const val = this.billAmount();
+    return val !== null && val !== undefined && val <= 0;
+  });
+
+  /** Prevents typing negative signs, plus signs, and exponential notation in currency inputs. */
+  protected onAmountKeyDown(event: KeyboardEvent): void {
+    if (event.key === '-' || event.key === '+' || event.key === 'e' || event.key === 'E') {
+      event.preventDefault();
+    }
+  }
+
+  /** Prevents pasting negative numbers into the bill amount input. */
+  protected onAmountPaste(event: ClipboardEvent): void {
+    const text = event.clipboardData?.getData('text') ?? '';
+    if (text.includes('-') || text.includes('+')) {
+      event.preventDefault();
+    }
+  }
+
+  /** Handles bill amount changes, sanitizing inputs. */
+  protected onBillAmountChange(value: any): void {
+    if (value === null || value === undefined || value === '') {
+      this.billAmount.set(null);
+      return;
+    }
+    const num = Number(value);
+    this.billAmount.set(isNaN(num) ? null : num);
+  }
+
   protected readonly amount = (value: number) => formatMoney(money(value));
   data: any = {};
   eventData: any = [];
@@ -638,49 +692,29 @@ export class NewClaimPage {
     const chosen = this.selectedCategory();
     const rules = claimRulesFor(this.category());
 
+    // Claims carry a per-claim limit (the cashless screens call the same rule
+    // the per-transaction limit).
     const perClaim = chosen && chosen.perClaimLimit > 0 ? chosen.perClaimLimit : null;
-    const afterClaim = perClaim !== null ? Math.min(bill, perClaim) : bill;
-
-    // Per-transaction limit: real from the plan config when the API sent it,
-    // otherwise the placeholder rule.
-    const txnReal = !!chosen && chosen.perTransactionLimit !== null;
-    const perTxn = txnReal
-      ? chosen!.perTransactionLimit
-      : rules.perTransactionLimit > 0
-        ? rules.perTransactionLimit
-        : null;
-    const eligible = perTxn !== null ? Math.min(afterClaim, perTxn) : afterClaim;
 
     // Co-payment: real from the wallet config when present, otherwise placeholder.
     const copayReal = !!chosen && chosen.copayValue !== null;
-    const copayMode: 'PERCENT' | 'FLAT' = copayReal ? chosen!.copayMode! : 'PERCENT';
-    const copayValue = copayReal ? chosen!.copayValue! : rules.copayPercent;
-    const copayAmount =
-      copayMode === 'PERCENT'
-        ? Math.round((eligible * copayValue) / 100)
-        : Math.min(copayValue, eligible);
-    const reimbursable = Math.max(0, eligible - copayAmount);
+    const copay: Copay = copayReal
+      ? { mode: chosen!.copayMode!, value: chosen!.copayValue! }
+      : { mode: 'PERCENT', value: rules.copayPercent };
+
+    // Co-payment first, then the limit: the limit is the most the claim pays.
+    const split = splitPayment(bill, copay, perClaim);
 
     const balance = this.categoryBalance();
     const balanceAmount = balance ? balance.amount : null;
     const walletDeduction =
-      balanceAmount !== null ? Math.min(reimbursable, balanceAmount) : reimbursable;
+      balanceAmount !== null ? Math.min(split.walletPays, balanceAmount) : split.walletPays;
     const outOfPocket = Math.max(0, bill - walletDeduction);
 
     return {
-      bill,
+      ...split,
       perClaim,
-      afterClaim,
-      capped: perClaim !== null && bill > perClaim,
-      perTxn,
-      txnReal,
-      txnCapped: perTxn !== null && afterClaim > perTxn,
-      eligible,
       copayReal,
-      copayMode,
-      copayValue,
-      copayAmount,
-      reimbursable,
       walletDeduction,
       outOfPocket,
       balanceKnown: balanceAmount !== null,
@@ -727,7 +761,13 @@ export class NewClaimPage {
       }
     }
     if (this.treatmentDate() === '') return 'Choose the treatment date.';
-    if ((this.billAmount() ?? 0) <= 0) return 'Enter the bill amount.';
+    if (this.treatmentDate() > this.today) return 'Treatment date cannot be in the future.';
+    if (this.treatmentDate() < this.minTreatmentDate()) {
+      return `Treatment date must be within the last ${this.claimExpiryDays()} days as per policy claim expiry rules.`;
+    }
+    const bill = this.billAmount();
+    if (bill === null || bill === undefined) return 'Enter the bill amount.';
+    if (bill <= 0) return 'Bill amount must be greater than zero.';
     return null;
   }
 
@@ -1078,6 +1118,10 @@ export class NewClaimPage {
     });
 
 
+    const primaryMember = this.family.family().find((m) => m.isPrimary);
+    const resolvedUhid = patient.uhid || primaryMember?.uhid || null;
+    const resolvedEmployeeId = patient.employeeId || primaryMember?.employeeId || null;
+
     const payload = {
       "resourceType": "Claim",
       "user_id": patient.id,
@@ -1090,6 +1134,8 @@ export class NewClaimPage {
 
       "policy_id": "8ca9f31c-e1ad-478b-9b24-9f56e18a9165",
       "customer_id": "CUS-HH-000731",
+      ...(resolvedUhid ? { "uhid": resolvedUhid } : {}),
+      ...(resolvedEmployeeId ? { "employee_id": resolvedEmployeeId } : {}),
 
       "category": this.category(),
       ...(this.isDental() ? { "dental_claim_type": this.dentalSubType() } : {}),

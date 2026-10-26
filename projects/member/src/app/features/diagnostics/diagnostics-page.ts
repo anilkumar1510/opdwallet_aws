@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal, inject } from '@angular/core';
 
+import { MOCK_WALLET_BALANCES, WalletBalances, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PolicyStore } from '../../core/member/policy.store';
+import { PaymentSplitView } from '../../shared/ui/payment-split';
+
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
@@ -164,7 +168,7 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
 @Component({
   selector: 'opd-diagnostics-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption, CoverageBannerComponent],
+  imports: [ClaimOption, CoverageBannerComponent, PaymentSplitView],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -491,15 +495,7 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
               @case ('breakdown') {
                 <p class="mb-2 text-sm font-medium text-ink-700">Payment breakdown — {{ selectedCart()?.name }}</p>
                 <p class="mb-3 text-xs text-ink-500">📅 {{ slotDate()?.label }} · {{ slotTime() }}</p>
-                <dl class="space-y-2 text-sm">
-                  <div class="flex justify-between"><dt class="text-ink-700">Test value</dt><dd class="font-medium text-ink-900">₹{{ testValue() }}</dd></div>
-                  @if (collectionCharge() > 0) { <div class="flex justify-between"><dt class="text-ink-700">Home collection charge</dt><dd class="font-medium text-ink-900">₹{{ collectionCharge() }}</dd></div> }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
-                  @if (pay().excess > 0) { <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div> }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
-                </dl>
+                <opd-payment-split [split]="pay().split" billLabel="Total bill" [billLines]="billLines()" />
               }
 
               @case ('pending') {
@@ -554,9 +550,14 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
 })
 export class DiagnosticsPage {
   protected readonly claimModes = inject(ClaimModeStore);
-  protected readonly BenefitCategory = BenefitCategory;
   /** The benefit this page books, for the policy's claim mode. */
   protected readonly claimCategory = computed(() => (this.kind() === 'RADIOLOGY' ? BenefitCategory.Radiology : BenefitCategory.Pathology));
+  /**
+   * Balances a payment here is capped at — the category/pool, then the total
+   * wallet. STATIC for now; the live pool balance is PolicyStore.poolBalanceFor.
+   */
+  protected readonly walletBalances = computed<WalletBalances>(() => MOCK_WALLET_BALANCES);
+  protected readonly BenefitCategory = BenefitCategory;
   /** Bound from route data via withComponentInputBinding(). */
   readonly kind = input<Kind>('PATHOLOGY');
 
@@ -624,11 +625,16 @@ export class DiagnosticsPage {
   protected readonly collectionCharge = computed(() => (this.mode() === 'home' ? COLLECTION_CHARGE : 0));
   protected readonly pay = computed(() => {
     const value = this.testValue() + this.collectionCharge();
-    const covered = Math.min(value, PER_TXN_LIMIT);
-    const copay = Math.round((covered * COPAY_PCT) / 100);
-    const walletBlock = covered - copay;
-    const excess = Math.max(0, value - PER_TXN_LIMIT);
-    return { value, covered, copay, walletBlock, excess, selfPay: copay + excess };
+    // Co-payment first, then the per-transaction limit, then the category/pool and total wallet balances.
+    const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT, this.walletBalances());
+    return { value, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
+  });
+
+  /** What makes up the bill on the payment step. */
+  protected readonly billLines = computed(() => {
+    const lines = [{ label: 'Test value', amount: this.testValue() }];
+    if (this.collectionCharge() > 0) lines.push({ label: 'Home collection charge', amount: this.collectionCharge() });
+    return lines;
   });
 
   protected cartTotal(c: ProviderCart): number { return c.tests.reduce((s, t) => s + t.price, 0); }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Claim } from '../../core/claims/claim.model';
@@ -9,15 +9,15 @@ import { StatusBadge } from '../../shared/ui/status-badge';
 import { BackLink } from '../../shared/ui/back-link';
 import { PageHeader } from '../../shared/ui/page-header';
 import { OriginalDocsNotice } from '../../shared/ui/original-docs-notice';
-import { AppService } from '../../core/http/api.service';
+import { WalletPagination } from '../../shared/ui/wallet-pagination';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-const CLAIMS_PAGE_SIZE = 5;
+const CLAIMS_PAGE_SIZE = 10;
 
 @Component({
   selector: 'opd-claims-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LoadingView, ErrorView, EmptyView, StatusBadge, BackLink, PageHeader, OriginalDocsNotice],
+  imports: [RouterLink, LoadingView, ErrorView, EmptyView, StatusBadge, BackLink, PageHeader, OriginalDocsNotice, WalletPagination],
   template: `
     <opd-page-header
       title="Claims"
@@ -89,15 +89,21 @@ const CLAIMS_PAGE_SIZE = 5;
           </p>
         }
 
-        @if (store.clailListData() && store.clailListData().length) {
+        @if (store.getClimListDataLoading() && (!store.clailListData() || !store.clailListData().length)) {
+          <div class="mt-6 space-y-3">
+            <div class="h-20 animate-pulse rounded-2xl bg-white/70"></div>
+            <div class="h-20 animate-pulse rounded-2xl bg-white/70"></div>
+            <div class="h-20 animate-pulse rounded-2xl bg-white/70"></div>
+          </div>
+        } @else if (store.clailListData() && store.clailListData().length) {
           <ul class="mt-6 space-y-3">
-            @for (claim of visibleClaims(); track claim.id) {
+            @for (claim of store.clailListData(); track claim.claim_id || claim.id || $index) {
               <li
                 class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
                 style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
               >
                 <a
-                  [routerLink]="['/member/claims', claim.claim_id]"
+                  [routerLink]="['/member/claims', claim.claim_id || claim.id]"
                   class="flex items-start justify-between gap-3"
                 >
                   <div class="min-w-0 flex-1">
@@ -106,7 +112,7 @@ const CLAIMS_PAGE_SIZE = 5;
                     </p>
                     <p class="mt-0.5 truncate text-sm text-ink-700">{{ claim?.provider }}</p>
                     <p class="mt-1 text-xs text-ink-500">
-                      {{ claim?.claim_id }} · {{ date(claim?.treatment_date) }}
+                      {{ claim?.claim_id || claim?.id }} · {{ date(claim?.treatment_date) }}
                       @if (claim?.documents && claim?.documents?.length) {
                         · {{ claim?.documents.length }} document{{ claim?.documents.length === 1 ? '' : 's' }}
                       }
@@ -132,99 +138,43 @@ const CLAIMS_PAGE_SIZE = 5;
             }
           </ul>
 
-          @if (hasMore()) {
-            <button
-              type="button"
-              class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700"
-              (click)="loadMore()"
-            >
-              Load more
-            </button>
-          }
+          <opd-wallet-pagination
+            [page]="store.claimsPage()"
+            [pageSize]="pageSize"
+            [total]="store.totalClaimsCount()"
+            [hasMore]="store.claimsHasMore()"
+            [loading]="store.getClimListDataLoading()"
+            ariaLabel="Claims pages"
+            (pageChange)="onPageChange($event)"
+          />
         } @else {
           <opd-empty
             title="No claims yet"
             detail="Reimbursement claims you submit will appear here."
           />
         }
-        <!-- @if (store.claims().length) {
-          <ul class="mt-6 space-y-3">
-            @for (claim of store.claims(); track claim.id) {
-              <li
-                class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
-                style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
-              >
-                <a
-                  [routerLink]="['/member/claims', claim.id]"
-                  class="flex items-start justify-between gap-3"
-                >
-                  <div class="min-w-0 flex-1">
-                    <p class="truncate text-base font-semibold text-[#034DA2]">
-                      {{ claim.categoryLabel }}
-                    </p>
-                    <p class="mt-0.5 truncate text-sm text-ink-700">{{ claim.providerName }}</p>
-                    <p class="mt-1 text-xs text-ink-500">
-                      {{ claim.reference }} · {{ date(claim.treatmentDate) }}
-                      @if (claim.documentCount) {
-                        · {{ claim.documentCount }} document{{ claim.documentCount === 1 ? '' : 's' }}
-                      }
-                    </p>
-                  </div>
-                  <div class="shrink-0 text-right">
-                    <opd-status-badge [status]="claim.status" />
-                    <p class="mt-2 text-lg font-semibold text-[#303030]">
-                      {{ money(claim.billAmount) }}
-                    </p>
-                    @if (claim.approvedAmount; as approved) {
-                      <p class="text-xs text-success-700">{{ money(approved) }} approved</p>
-                    }
-                  </div>
-                </a>
-              </li>
-            }
-          </ul>
-        } @else {
-          <opd-empty
-            title="No claims yet"
-            detail="Reimbursement claims you submit will appear here."
-          />
-        } -->
       }
     </div>
   `,
 })
-export class ClaimsPage {
+export class ClaimsPage implements OnInit {
   protected readonly store = inject(ClaimsStore);
   protected readonly money = formatMoney;
-  pageNo: number = 0;
-  pageSize: number = 20
-  public claimList: any;
 
-  /** Claims are revealed CLAIMS_PAGE_SIZE at a time; "Load more" shows the next batch. */
-  private readonly visibleCount = signal(CLAIMS_PAGE_SIZE);
-  protected readonly visibleClaims = computed(() =>
-    (this.store.clailListData() ?? []).slice(0, this.visibleCount()),
-  );
-  protected readonly hasMore = computed(
-    () => (this.store.clailListData()?.length ?? 0) > this.visibleCount(),
-  );
+  protected readonly pageSize = CLAIMS_PAGE_SIZE;
 
-  protected loadMore(): void {
-    this.visibleCount.update((n) => n + CLAIMS_PAGE_SIZE);
+  ngOnInit(): void {
+    void this.store.loadDashboard();
+    void this.store.getClimListData(0, this.pageSize);
   }
 
-  constructor(private appService : AppService, private claimsStore : ClaimsStore){
-    // this.getClimListData()
-     effect(() => {
-      this.store.loadDashboard();
-      this.store.getClimListData();
-
-    });
+  protected onPageChange(targetPage: number): void {
+    this.store.goToClaimsPage(targetPage, this.pageSize);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  
+
   protected patientName(): string {
-    return 'this member'
-    // this.store.claims[0]?.patientName ?? 'this member';
+    return 'this member';
   }
 
   /** Documents needed, or a resubmission asked for — either way the documents again. */

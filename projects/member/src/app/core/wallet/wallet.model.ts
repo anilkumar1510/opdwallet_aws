@@ -30,6 +30,10 @@ export interface WalletCategoryBalance {
   readonly annualLimit: Money | null;
   /** The most that can be spent in one transaction, when the plan caps it. */
   readonly perClaimLimit: Money | null;
+  /** Whether cashless booking/usage is enabled for this category in the policy. */
+  readonly cashless?: boolean;
+  /** Whether reimbursement claim filing is enabled for this category in the policy. */
+  readonly claims?: boolean;
 }
 
 export interface FamilyConsumption {
@@ -81,4 +85,5 @@ export interface WalletTransaction {
    * the total — and three identical ₹300 debits on one day are indistinguishable.
    */
   readonly balanceAfter: Money | null;
+  readonly transactionType?: string;
 }

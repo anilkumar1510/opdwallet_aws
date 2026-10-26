@@ -40,3 +40,21 @@
 - [x] 4.8 Follow the backend's `opd_` resource rename (`opd_claim`, `opd_dispute`, `opd_dispute_chat`) in the portal, tests and docs (17 Oct); live re-check needs a signed-in session.
 - [x] 4.9 Draft claims are not listed on the Support page, so no grievance can be raised on an unsubmitted claim (19 Oct).
 - [x] 4.10 Every claim status except `DRAFT` is listed on the Support page; the claims are re-read with the 30 s refresh so a claim submitted meanwhile (DRAFT to UNDER_REVIEW) appears (21 Oct).
+
+## 5. Event-Driven Real-Time Sync & UI Modernization (2026-10-22)
+
+- [x] 5.1 Remove artificial cooldown locks (`COOLDOWN_MS`, `cooling` signal) from `helpline-page.ts`, enabling continuous unhindered back-and-forth messaging.
+- [x] 5.2 Implement event-driven immediate refresh on message send and window `visibilitychange`/`focus`, replacing fixed background polling windows.
+- [x] 5.3 Active thread live sync interval (`LIVE_SYNC_INTERVAL_MS = 5000`) enabled strictly while viewing an active ticket in a foreground tab.
+- [x] 5.4 Bounded scrollable thread container (`max-h-[380px]`) with auto-scroll to bottom, keeping reply text box and action buttons directly accessible without vertical page scrolling.
+- [x] 5.5 Multi-tier ticket priority sorting in flagged claims: `Response Received (Rank 0) -> Open (Rank 1) -> Resolved (Rank 2) -> Un-ticketed / Ask for help (Rank 3) -> Closed (Rank 4)`.
+- [x] 5.6 Verified production build (`ng build member`) succeeds with zero errors.
+
+## 6. Live Reply Supporting Documents & Member Resolution (2026-10-22)
+
+- [x] 6.1 Remove blocking `window.prompt` confirmation on "Mark resolved" in `helpline-page.ts`, directly transitioning tickets to `RESOLVED` and dispatching `userResolve`.
+- [x] 6.2 Add integrated document attachment trigger directly in the active chatbox (`#liveReply`), enabling document uploads with every reply message via DMS (`/dms/api/v1/emrImage`).
+- [x] 6.3 Update `disputeApi.reply` to accept `documents` and `documentIds`, appending new supporting documents to the dispute thread and forwarding to Twenty CRM.
+- [x] 6.4 Verified production build succeeds with zero errors.
+
+
