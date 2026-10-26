@@ -22,6 +22,7 @@ export interface BankDetails {
   readonly patientName?: string;
   readonly paymentMode?: string;
   readonly isDefault?: boolean;
+  readonly adjudicationStatus?: string;
   /**
    * Cancelled-cheque proof document name or ID.
    */
@@ -125,6 +126,7 @@ export class BankDetailsStore {
           isDefault: defaultRow.is_default ?? true,
           cancelledChequeName: defaultRow.cancelled_cheque_document_id ?? '',
           cancelledChequeDocumentId: defaultRow.cancelled_cheque_document_id ?? '',
+          adjudicationStatus: defaultRow.adjudicationStatus ?? defaultRow.status ?? '',
         };
 
         this._details.set(details);
@@ -256,6 +258,7 @@ export class BankDetailsStore {
         ifsc_code: details.ifsc.trim().toUpperCase(),
         bank_name: details.bankName.trim(),
         cancelled_cheque_document_id: chequeDocId || details.cancelledChequeName || '',
+        adjudicationStatus: 'PENDING_VERIFICATION',
       };
 
       const url = '/habit-opd/api/v1/opd_profile_details';
