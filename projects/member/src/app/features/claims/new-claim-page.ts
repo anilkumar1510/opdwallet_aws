@@ -251,7 +251,19 @@ const STEPS = [
 
                 <div>
                   <label for="treatmentDate" class="mb-1 block text-sm font-medium text-ink-700">Treatment date</label>
-                  <input id="treatmentDate" name="treatmentDate" type="date" [max]="today" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="treatmentDate()" (ngModelChange)="treatmentDate.set($event)" />
+                  <input
+                    id="treatmentDate"
+                    name="treatmentDate"
+                    type="date"
+                    [min]="minTreatmentDate()"
+                    [max]="today"
+                    class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none"
+                    [ngModel]="treatmentDate()"
+                    (ngModelChange)="treatmentDate.set($event)"
+                  />
+                  <p class="mt-1 text-xs text-ink-500">
+                    Claims must be submitted within {{ claimExpiryDays() }} days of treatment.
+                  </p>
                 </div>
 
                 <!-- Location fields per category (matrix): one for consults /
@@ -555,6 +567,30 @@ export class NewClaimPage {
 
 
   protected readonly today = new Date().toISOString().slice(0, 10);
+
+  /**
+   * Configured claim submission expiry window (in days) from the active policy version (default 45 days).
+   * Restricts treatment date selection so users cannot file claims after policy expiry.
+   */
+  protected readonly claimExpiryDays = computed<number>(() => {
+    const version = this.policyStore.version();
+    const expiry = version?.claim_expiry;
+    return typeof expiry === 'number' && expiry > 0 ? expiry-1 : 45;
+  });
+
+  /**
+   * Minimum allowable treatment date (today - claimExpiryDays) formatted as YYYY-MM-DD.
+   * Bound to [min] on input#treatmentDate to disable older dates in the datepicker.
+   */
+  protected readonly minTreatmentDate = computed<string>(() => {
+    const days = this.claimExpiryDays();
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   protected readonly amount = (value: number) => formatMoney(money(value));
   data: any = {};
   eventData: any = [];
@@ -727,6 +763,10 @@ export class NewClaimPage {
       }
     }
     if (this.treatmentDate() === '') return 'Choose the treatment date.';
+    if (this.treatmentDate() > this.today) return 'Treatment date cannot be in the future.';
+    if (this.treatmentDate() < this.minTreatmentDate()) {
+      return `Treatment date must be within the last ${this.claimExpiryDays()} days as per policy claim expiry rules.`;
+    }
     if ((this.billAmount() ?? 0) <= 0) return 'Enter the bill amount.';
     return null;
   }
