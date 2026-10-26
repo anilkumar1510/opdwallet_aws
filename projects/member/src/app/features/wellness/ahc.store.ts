@@ -4,6 +4,8 @@ import { AppService } from '../../core/http/api.service';
 import { LocationStore } from '../../core/location/location.store';
 import { BookingsStore } from '../../core/bookings/bookings.store';
 import { PaymentGatewayService, PaymentRequest } from '../../core/payment/payment-gateway.service';
+import { PolicyStore } from '../../core/member/policy.store';
+import { FamilyStore } from '../../core/family/family.store';
 
 /** One saved collection address, decrypted and ready to show. */
 export interface CollectionAddress {
@@ -35,12 +37,37 @@ export interface AhcServiceTile {
     raw: any;
 }
 
+/**
+ * One lab offering one leg of the package — a `service_item` entry of a
+ * phc_detail row. The same leg (e.g. pathology) is offered by several labs.
+ */
+export interface AhcLab {
+    /** phc_detail row id + service item code: unique per lab and leg. */
+    id: string;
+    providerName: string;
+    /** `provider_code` — matched against the provider listing to pre-select it. */
+    providerCode: string;
+    /** As sent, upper-cased: 'PATHOLOGY' or 'RADIOLOGY'. */
+    serviceType: string;
+    serviceItemName: string;
+    serviceItemCode: string;
+    /** Profile names in `profile_test_catalog`, e.g. "Lipid", "Thyroid". */
+    profiles: string[];
+    testCount: number;
+    /** The `service_item` entry, sent to the provider, centre and slot calls. */
+    serviceItem: any;
+    /** The phc_detail row it came from. */
+    raw: any;
+}
+
 /** What the member picked on the first screen, kept for the later steps. */
 export interface AhcSelectedService {
     leg: 'pathology' | 'radiology' | 'package';
     tile: AhcServiceTile | null;
-    /** `data` of the AHC_PACKAGE_DETAIL row the tile came from. */
+    /** The package row the leg came from; with `lab`, the lab's phc_detail row. */
     package: any;
+    /** The lab picked for this leg, when the package offers a choice of labs. */
+    lab?: AhcLab | null;
 }
 
 /** One row of AHC_PROVIDER_LISTING, with the fields the screens use pulled out. */
@@ -115,7 +142,10 @@ export class AHCStore {
     private readonly location = inject(LocationStore);
     private readonly bookings = inject(BookingsStore);
     private readonly payments = inject(PaymentGatewayService);
+    private readonly policyStore = inject(PolicyStore);
+    private readonly family = inject(FamilyStore);
     private readonly _ahcList = signal<any | null>(null);
+    private readonly _ahcListServiceItemIds = signal<any | null>(null);
     private readonly _ahcServiceItemList = signal<any | null>(null);
     private readonly _ahcSelectedItem = signal<AhcSelectedService | null>(null);
     /** True from the package listing call until the detail call settles. */
@@ -174,27 +204,82 @@ export class AHCStore {
     readonly AHCIsProceedToBooking = this._ahcIsProceedToBooking.asReadonly();
     readonly checkoutLoading = this._checkoutLoading.asReadonly();
     readonly AHCCopayAmount = this._ahcCopayAmount.asReadonly();
+    readonly AHCListServiceItemIds = this._ahcListServiceItemIds.asReadonly();
     startDateTimeStamp: any;
     startDateObj: any;
     dateAndStartTimeTimestamp:any;
     dateAndEndTimeTimestamp:any;
-    /** `data` of the first AHC_PACKAGE_DETAIL row — the member's package. */
+    /**
+     * The first package row — `data` of an AHC_PACKAGE_DETAIL row, or a
+     * phc_detail row as it is sent (those come unwrapped).
+     */
     readonly ahcPackage = computed(() => {
         const rows = this._ahcServiceItemList();
-        return Array.isArray(rows) && rows.length ? (rows[0]?.data ?? null) : null;
+        return Array.isArray(rows) && rows.length ? (rows[0]?.data ?? rows[0] ?? null) : null;
     });
-    /** The package's legs in display order. */
+
+    /**
+     * Every lab offering a leg: one phc_detail row per provider, each with its
+     * `service_item` entries. Inactive rows are left out.
+     */
+    readonly labs = computed<AhcLab[]>(() => {
+        const rows = this._ahcServiceItemList();
+        if (!Array.isArray(rows)) return [];
+        return rows
+            .map((row) => row?.data ?? row)
+            .filter((row) => row && textOf(row.status).toLowerCase() !== 'inactive')
+            .flatMap((row) =>
+                (Array.isArray(row.service_item) ? row.service_item : []).map((item: any): AhcLab => {
+                    const catalog: any[] = Array.isArray(item?.profile_test_catalog) ? item.profile_test_catalog : [];
+                    return {
+                        id: textOf(row.id) + ':' + textOf(item?.service_item_code),
+                        providerName: textOf(row.provider_name) || 'Lab',
+                        providerCode: textOf(row.provider_code),
+                        serviceType: textOf(item?.serviceType_code || item?.serviceType).toUpperCase(),
+                        serviceItemName: textOf(item?.service_item) || textOf(row.phc_name),
+                        serviceItemCode: textOf(item?.service_item_code),
+                        profiles: catalog.map((p) => textOf(p?.profile_name)).filter(Boolean),
+                        testCount: catalog.reduce((n, p) => n + (Array.isArray(p?.test_name) ? p.test_name.length : 0), 0),
+                        serviceItem: item,
+                        raw: row,
+                    };
+                }),
+            );
+    });
+
+    /** The labs offering one leg ('PATHOLOGY', 'RADIOLOGY'), in API order. */
+    labsFor(serviceType: string): AhcLab[] {
+        const type = serviceType.toUpperCase();
+        return this.labs().filter((lab) => lab.serviceType === type);
+    }
+
+    /**
+     * The package's legs in display order: the package's own
+     * `benefits_package_service_tiles` when it has them, else one tile per
+     * service type the labs offer — pathology first, as it must be booked first.
+     */
     readonly serviceTiles = computed<AhcServiceTile[]>(() => {
         const tiles: any[] = this.ahcPackage()?.benefits_package_service_tiles ?? [];
-        return tiles
-            .map((t, index) => ({
-                id: String(t?.id ?? index),
-                serviceType: String(t?.serviceType ?? '').toUpperCase(),
-                order: Number(t?.order ?? index),
-                serviceItems: (t?.serviceItemInfo ?? []).flat(),
-                raw: t,
-            }))
-            .sort((a, b) => a.order - b.order);
+        if (tiles.length) {
+            return tiles
+                .map((t, index) => ({
+                    id: String(t?.id ?? index),
+                    serviceType: String(t?.serviceType ?? '').toUpperCase(),
+                    order: Number(t?.order ?? index),
+                    serviceItems: (t?.serviceItemInfo ?? []).flat(),
+                    raw: t,
+                }))
+                .sort((a, b) => a.order - b.order);
+        }
+        const rank = (type: string) => (type === 'PATHOLOGY' ? 0 : type === 'RADIOLOGY' ? 1 : 2);
+        const types = [...new Set(this.labs().map((lab) => lab.serviceType).filter(Boolean))].sort((a, b) => rank(a) - rank(b));
+        return types.map((type, order) => ({
+            id: type,
+            serviceType: type,
+            order,
+            serviceItems: this.labsFor(type).map((lab) => lab.serviceItem),
+            raw: null,
+        }));
     });
     readonly AHCSelectedModeofCollection = this._ahcSelectedModeofCollection.asReadonly();
     readonly AHCCollectionAddress = this._ahcCollectionAddress.asReadonly();
@@ -217,28 +302,62 @@ export class AHCStore {
         this._ahcSelectedSlot.set(selectedSlot)
         return true;
     }
-
+    getAHCPackageID(){
+        // const policies = this.policyStore.policies()
+        const version = this.policyStore.version();
+        const ahc_package_codes = version?.relationships?.find(rel => rel.relationship_code === 'self')
+                                    ?.categories
+                                    ?.find(cat => cat.category_code === 'AHC')
+                                    ?.ahc_package_codes ?? [];
+        return ahc_package_codes
+    }
     getAHCList(userId: any){
+        const serviceItemCode: any = this.getAHCPackageID();
+        // const serviceItemCode = 'hcl-group-executive-health-check-employee-40-and-above-years-male-year-2026-27-' //this.getAHCPackageID() 
         const userInfo = userId;
         const queryId = 'AHC_PACKAGE_LISTING';
-        const args = 'user_id:' + userInfo?.user_id + ',service_type_code:phc,mode_of_appointment:opd_network';
         const applicationName = 'habit-opd';
         const resourceName = 'opd_ahc_booking';
+        // const args = 'user_id:' + userInfo?.user_id + ',service_type_code:phc,mode_of_appointment:opd_network';
+
+        // https://api.habithealth.com/
+        //master-management/api/v1/?queryId=&args=&filter=serviceItemCode:hyundai-blood-sample-collection-at-home-below-40-female-package,mode_of_appointment:opd_network&page_no=0&page_size=9&search_columns=serviceItemName&search=&order_by=serviceItemName
+        const args = ''; //'user_id:' + userInfo?.user_id + ',service_type_code:phc,mode_of_appointment:opd_network';
+        //  const queryId = 'GET_PAGE';
+        // const applicationName = 'master-management';
+        // const resourceName = 'service_item_search';
+        const filter = 'serviceItemCode:'+ (serviceItemCode.length > 1 ? serviceItemCode[1] : serviceItemCode[0]) +'';
+        // const filter = '';
+        const page_no= 0 
+        const page_size=100
+        const search_columns = 'serviceItemName'
+        const search='';
+        const order_by='serviceItemName'
         const seq = ++this.packageSeq;
         this._ahcPackageLoading.set(true);
-        this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application='+ applicationName).subscribe({
+        // queryId=GET_PAGE&args=&
+    //    const args = '';
+    //     const filter = 'serviceType_code%3Aphc%2Cis_searchable%3Atrue%2Cshow_online%3Atrue%2Cpackage_type_code%3Ahealth_check%2Cpackage_sub_type_code%3Ahealth_check%2Cis_home_collection%3Atrue%2Cprovider_code%3ATHD001%23AD001%23RC001%2Cmode_of_appointment%3Aopd_network&page_no=0&page_size=9&search_columns=serviceItemName&search=&order_by=serviceItemName%20ASC&application=master-management
+        this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&filter='+ filter +'&page_no='+page_no
+            +'&page_size='+ page_size
+            +'&search_columns='+search_columns
+            +'&search='+search
+            +'&order_by='+order_by
+            +'&application='+ applicationName).subscribe({
             next: (response: any) => {
                 if (seq !== this.packageSeq) return;
                 const parsed = typeof response === 'string' ? JSON.parse(response) : response;
                 const resources: any[] = parsed?.resource ?? [];
                 // const selectedPackage = resources.find(
                 //         (item: any) =>
-                //             item?.data?.id === "853e6780-c6d1-11f1-9653-4eb7369f2b18-19"
+                //             item?.data?.id === "17f9d2f0-c21b-11f1-83a6-d6f78dbc4361-65"
                 //         //"ddb554b0-c21b-11f1-97e2-eadcbe87e341-78"
                 //         // pathalogy "853e6780-c6d1-11f1-9653-4eb7369f2b18-19"  //"853f03c0-c6d1-11f1-9653-4eb7369f2b18-21"
                 //         );
                 if(resources.length > 0){
-                    const selectedPackage = resources[0];
+                    const selectedPackage = resources[0]
+                    const serviceItemIds = resources.map(item => item.data.serviceItemId);
+                    this._ahcListServiceItemIds.set(serviceItemIds.toString())
                     this._ahcList.set(selectedPackage ?? null);
                     if (!selectedPackage) {
                         // No matching package on the plan: nothing to detail.
@@ -246,6 +365,7 @@ export class AHCStore {
                         this._ahcPackageLoading.set(false);
                         return;
                     }
+                    
                     this.getAHCServiceItems(userInfo, selectedPackage, seq);
                 } else{
                     this._ahcServiceItemList.set([]);
@@ -262,23 +382,48 @@ export class AHCStore {
     }
     getAHCServiceItems(userInfo: any, packageList: any, seq = this.packageSeq){
         const packageListObj = packageList.data;
+        const serviceItemIds = this._ahcListServiceItemIds()
         const resourceName = 'opd_ahc_booking';
         const queryId = 'AHC_PACKAGE_DETAIL';
         const applicationName = 'habit-opd';
-        const args = 'user_id:' + userInfo?.user_id +
-                     ',serviceItemCode:' + packageListObj?.service_item_code +
-                     ',facility_id:' + userInfo?.facilities[0]?.org_id +
-                     ',bp_code:' + packageListObj.bp_code +
-                     ',bg_code:' + packageListObj.bg_code +
-                     ',selling_discount_rate:' + packageListObj.total_share +
-                     ',bp_service_item_id:'+ packageListObj.id;
-                     ',mode_of_appointment: opd_network';
+        // const args = 'user_id:' + userInfo?.user_id +
+        //              ',serviceItemCode:' + packageListObj?.service_item_code +
+        //              ',facility_id:' + userInfo?.facilities[0]?.org_id +
+        //              ',bp_code:' + packageListObj.bp_code +
+        //              ',bg_code:' + packageListObj.bg_code +
+        //              ',selling_discount_rate:' + packageListObj.total_share +
+        //              ',bp_service_item_id:'+ packageListObj.id;
+        //              ',mode_of_appointment: opd_network';
         
-        const filter = 'serviceType_code:' + packageListObj?.service_type_code +
-                        'is_searchable:true' +
-                        'package_type_code:health_check' +
-                        'package_sub_type_code:health_check' + packageListObj.package_sub_type_code +
-                        'serviceItemCode:' + packageListObj?.service_item_code ;
+        // const filter = 'serviceType_code:' + packageListObj?.service_type_code +
+        //                 'is_searchable:true' +
+        //                 'package_type_code:health_check' +
+        //                 'package_sub_type_code:health_check' + packageListObj.package_sub_type_code +
+        //                 'serviceItemCode:' + packageListObj?.service_item_code ;
+
+        // https://api.habithealth.com//api/v1/?queryId=&filter=id%3A600117c0-c6e9-11f1-8974-3e5e3913171d-35%27 
+        // const resourceName = 'phc_detail';
+        // const queryId = 'GET_PAGE';
+        // const applicationName = 'facility-management';
+        const args = '';
+        // const args = 'user_id:' + userInfo?.user_id +
+        //              ',serviceItemCode:' + packageListObj?.service_item_code +
+        //              ',facility_id:' + userInfo?.facilities[0]?.org_id +
+        //              ',bp_code:' + packageListObj.bp_code +
+        //              ',bg_code:' + packageListObj.bg_code +
+        //              ',selling_discount_rate:' + packageListObj.total_share +
+        //              ',bp_service_item_id:'+ packageListObj.id;
+        //              ',mode_of_appointment: opd_network';
+        
+        const filter = 'phc_id:'+packageListObj?.serviceItemId;
+        // const filter = 'phc_id:'+serviceItemIds;
+        // const filter = 'serviceItemId:'+serviceItemIds;
+        // const filter = 'serviceItemId:6adbf400-b1b6-11f1-a59c-f26e60bd39f7-92';
+        // 'serviceType_code:' + packageListObj?.service_type_code +
+        //                 'is_searchable:true' +
+        //                 'package_type_code:health_check' +
+        //                 'package_sub_type_code:health_check' + packageListObj.package_sub_type_code +
+        //                 'serviceItemCode:' + packageListObj?.service_item_code ;
 
 
         this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application='+ applicationName + '&filter=' + filter).subscribe({
@@ -288,7 +433,12 @@ export class AHCStore {
                 const resources: any[] = parsed?.resource ?? [];
                 this._ahcServiceItemList.set(resources);
                 this._ahcPackageLoading.set(false);
-                const statusInfo: any[] = resources[0]?.data?.packageServiceItemsStatusInfo ?? [];
+                // phc_detail rows come unwrapped; the package listing row may carry it instead.
+                const statusInfo: any[] =
+                    resources[0]?.data?.packageServiceItemsStatusInfo ??
+                    resources[0]?.packageServiceItemsStatusInfo ??
+                    this._ahcList()?.data?.packageServiceItemsStatusInfo ??
+                    [];
                 const key = userInfo?.api_encryption_key ?? null;
                 // Only a leg whose stage is 'Booked' gets a booking status card.
                 const bookings = statusInfo
@@ -415,6 +565,8 @@ export class AHCStore {
      */
     private legServiceItem(): any {
         const selectedItem = this.AHCSelectedItem();
+        // A lab picked on the first screen names its own service item.
+        if (selectedItem?.lab?.serviceItem) return selectedItem.lab.serviceItem;
         const items: any[] = selectedItem?.package?.service_item ?? [];
         const leg = selectedItem?.tile?.serviceType?.toLowerCase() || selectedItem?.leg;
         return items.find((item) => String(item?.serviceType_code ?? '').toLowerCase() === leg) ?? items[0];
@@ -640,9 +792,26 @@ export class AHCStore {
     
 
     /**.  Home collection slots **/
+    /**
+     * `,patient_gender:Male|Female|Other` for the member being booked — the
+     * signed-in user (the booking's patient_id), read from GET_FAMILY_LIST's
+     * `gender_id`. Left out when the API sent no gender, rather than guessing.
+     */
+    private patientGenderArg(userInfo: any): string {
+        const members = this.family.rawFamily();
+        const patient =
+            members.find((m) => m.memberId === userInfo?.user_id) ??
+            members.find((m) => m.isPrimary) ??
+            this.family.activeMember();
+        const gender = patient?.gender?.toUpperCase();
+        if (gender !== 'MALE' && gender !== 'FEMALE' && gender !== 'OTHER') return '';
+        return ',patient_gender:' + gender.charAt(0) + gender.slice(1).toLowerCase();
+    }
+
     async getAHCDynamicSlots(userInfo: any, date: Date, modeofCollection: any): Promise<void> {
         const provider = this._selectedProvider();
         const selectedItem: any = this.AHCSelectedItem();
+        const packageListObj =this.AHC();
         const selectedCollectionAddress: any = this.selectedCollectionAddress();
         const selectedCentre = this.AHCSelectedCentre();
         const seq = ++this.slotSeq;
@@ -657,7 +826,11 @@ export class AHCStore {
         const queryId = modeofCollection === 'home' ? 'AHC_DYNAMIC_SLOTS' : 'AHC_SLOT_SERVICE_TYPE';
         const applicationName = 'habit-opd';
         const resourceName = 'opd_ahc_booking';
-        const packageListObj =this.AHC();
+//         /diagnostic/api/v1/?queryId=&args=service_type_code:<CODE1>#<CODE2>,provider_code:<PROVIDER_CODE>,center_code:<CENTER_
+//   CODE>,date:<EPOCH_MS>,slotDate:<DD/MM/YYYY>
+        // const queryId = modeofCollection === 'home' ? 'GET_DYNAMIC_SLOTS_BY_PINCODE' : 'GET_SLOTS_SERVICETYPE_WISE';
+        // const applicationName = modeofCollection === 'home' ? 'master-management' : 'diagnostic';
+        // const resourceName = modeofCollection === 'home' ? 'provider' : 'common_utility';
         const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const slotDate = [day.getDate(), day.getMonth() + 1].map((n) => String(n).padStart(2, '0')).join('/') + '/' + day.getFullYear();
         console.log('.day ', day, 'slotDate ', slotDate)
@@ -665,29 +838,65 @@ export class AHCStore {
         const timestamp = this.startDateObj.getTime();
         this.startDateTimeStamp = timestamp;
         let args = "";
+        console.log('------this.patientGenderArg(userInfo)-->', this.patientGenderArg(userInfo))
+        // http://localhost:4590/master-management/api/v1/provider?queryId=GET_DYNAMIC_SLOTS_BY_PINCODE&
+        // args=provider_code:THD001,date:1792780200000,pincode:600129,facility_id:e2df9fe0-b395-11ef-b263-d21cb9dedc2c-41,
+        // patient_gender:Male,collection_code:P1522,address.street1:HC NO,address.street2:Noida st,address.street3:street 2,
+        // address.city:chennai,address.state:tamil nadu,address.pincode:600129,address.country:india,
+        // address.latitude:12.9945394,address.longitude:80.21506649999999,address.cityDisplayName:Chennai,address.stateDisplayName:Tamil Nadu,
+        // address.countryDisplayName:India,latitude:12.9945394,longitude:80.21506649999999
+        // &application=master-management
         if(modeofCollection == 'home'){
             args = 'provider_code:' + provider.code +
                 ',date:' + timestamp +
                 ',facility_id:' + userInfo?.facilities[0]?.org_id +
-                ',patient_gender:Male' + //-------------------------------------------------
+                this.patientGenderArg(userInfo) +
                 ',pincode:' + selectedCollectionAddress?.pincode +
-                ',collection_code:'+ provider?.raw?.extra_data?.home_collection_code +
+                ',collection_code:'+ packageListObj?.data?.home_collection_code+
                 ',address.street1:' + selectedCollectionAddress?.line1 +
                 ',address.street2:' + selectedCollectionAddress?.line2 +
                 ',address.pincode:' + selectedCollectionAddress?.pincode +
                 ',address.country:' + selectedCollectionAddress?.country +
+                ',address.city:' + selectedCollectionAddress?.city + 
+                ',address.state:' + selectedCollectionAddress?.state +
                 ',address.cityDisplayName:' + selectedCollectionAddress?.city + 
                 ',address.stateDisplayName:' + selectedCollectionAddress?.state +
+                ',address.countryDisplayName:' + selectedCollectionAddress?.country +
                 ",address.address_type:" + selectedCollectionAddress?.type +
+                ',address.latitude:' + selectedCollectionAddress?.latitude +
+                ',address.longitude:' + selectedCollectionAddress?.longitude
                 ',latitude:' + selectedCollectionAddress?.latitude +
                 ',longitude:' + selectedCollectionAddress?.longitude
         } else{
-            args = 'service_type_code:'+ packageListObj?.data?.service_type_code +
-                ',provider_code:' + provider.code +
-                ',center_code:' + selectedCentre?.raw?.center_code +
-                ',date:'+ timestamp+
-                ',slotDate:'+ slotDate
+            args =  'provider_code:' + provider.code +
+                    ',service_type_code:'+ packageListObj?.data?.serviceType_code +
+                    ',center_code:TN'+ //**************************** */
+                    ',date:' + timestamp +
+                    ',slotDate:'+ slotDate
         }
+        // if(modeofCollection == 'home'){
+        //     args = 'provider_code:' + provider.code +
+        //         ',date:' + timestamp +
+        //         ',facility_id:' + userInfo?.facilities[0]?.org_id +
+        //         ',patient_gender:Male' + //-------------------------------------------------
+        //         ',pincode:' + selectedCollectionAddress?.pincode +
+        //         ',collection_code:'+ provider?.raw?.extra_data?.home_collection_code +
+        //         ',address.street1:' + selectedCollectionAddress?.line1 +
+        //         ',address.street2:' + selectedCollectionAddress?.line2 +
+        //         ',address.pincode:' + selectedCollectionAddress?.pincode +
+        //         ',address.country:' + selectedCollectionAddress?.country +
+        //         ',address.cityDisplayName:' + selectedCollectionAddress?.city + 
+        //         ',address.stateDisplayName:' + selectedCollectionAddress?.state +
+        //         ",address.address_type:" + selectedCollectionAddress?.type +
+        //         ',latitude:' + selectedCollectionAddress?.latitude +
+        //         ',longitude:' + selectedCollectionAddress?.longitude
+        // } else{
+        //     args = 'service_type_code:'+ packageListObj?.data?.service_type_code +
+        //         ',provider_code:' + provider.code +
+        //         ',center_code:' + selectedCentre?.raw?.center_code +
+        //         ',date:'+ timestamp+
+        //         ',slotDate:'+ slotDate
+        // }
         this._slotsLoading.set(true);
         try {
             const response = await firstValueFrom(
@@ -696,7 +905,9 @@ export class AHCStore {
             if (seq !== this.slotSeq) return;
             const parsed = typeof response === 'string' ? JSON.parse(response) : response;
             const resources: any[] = parsed?.resource ?? [];
-            this._ahcSlotResponse.set(resources[0]?.data)
+            // this._ahcSlotResponse.set(resources[0]?.data)
+            // this._ahcSlots.set(toSlots(resources[0]?.data?.outSourceCenterSlot ?? [], day));
+            this._ahcSlotResponse.set(resources[0])
             this._ahcSlots.set(toSlots(resources[0]?.data?.outSourceCenterSlot ?? [], day));
         } catch {
             if (seq !== this.slotSeq) return;
@@ -722,13 +933,50 @@ export class AHCStore {
         console.log(' selectedSlots :', selectedSlots, ' dynamicSlotResponse :', slotResponse, 'this.startDateObj :', this.startDateObj, 'selectedCentre ', selectedCentre)
         // Home slots carry the time as text ("9:00 AM - 9:30 AM"); centre slots as
         // epoch event_start_time / event_end_time, whose time of day is what counts.
+        // if (selectedSlots?.raw?.slot) {
+        //     const slotTime = selectedSlots.raw.slot.find(' - ')?.split(' - ');
+        //     this.dateAndStartTimeTimestamp = addTimeToDate(new Date(this.startDateObj), slotTime[0]).getTime();
+        //     this.dateAndEndTimeTimestamp = addTimeToDate(new Date(this.startDateObj), slotTime[1]).getTime();
+        // } else {
+        //     this.dateAndStartTimeTimestamp = atTimeOfDay(this.startDateObj, selectedSlots?.raw?.event_start_time);
+        //     this.dateAndEndTimeTimestamp = atTimeOfDay(this.startDateObj, selectedSlots?.raw?.event_end_time);
+        // }
+
         if (selectedSlots?.raw?.slot) {
-            const slotTime = selectedSlots.raw.slot.split(' - ');
-            this.dateAndStartTimeTimestamp = addTimeToDate(new Date(this.startDateObj), slotTime[0]).getTime();
-            this.dateAndEndTimeTimestamp = addTimeToDate(new Date(this.startDateObj), slotTime[1]).getTime();
+            const slot = selectedSlots.raw.slot;
+            if (slot.includes(' - ')) {
+                // Format: "9:00 AM - 9:30 AM"
+                const [startTime, endTime] = slot.split(' - ');
+                this.dateAndStartTimeTimestamp = addTimeToDate(
+                    new Date(this.startDateObj),
+                    startTime
+                ).getTime();
+                this.dateAndEndTimeTimestamp = addTimeToDate(
+                    new Date(this.startDateObj),
+                    endTime
+                ).getTime();
+            } else {
+                // Format: "9:00 AM"
+                this.dateAndStartTimeTimestamp = addTimeToDate(
+                    new Date(this.startDateObj),
+                    slot
+                ).getTime();
+
+                // Use event_end_time if available
+                this.dateAndEndTimeTimestamp = atTimeOfDay(
+                    this.startDateObj,
+                    selectedSlots?.raw?.event_end_time
+                );
+            }
         } else {
-            this.dateAndStartTimeTimestamp = atTimeOfDay(this.startDateObj, selectedSlots?.raw?.event_start_time);
-            this.dateAndEndTimeTimestamp = atTimeOfDay(this.startDateObj, selectedSlots?.raw?.event_end_time);
+            this.dateAndStartTimeTimestamp = atTimeOfDay(
+                this.startDateObj,
+                selectedSlots?.raw?.event_start_time
+            );
+            this.dateAndEndTimeTimestamp = atTimeOfDay(
+                this.startDateObj,
+                selectedSlots?.raw?.event_end_time
+            );
         }
         console.log('dateAndStartTimeTimestamp :', this.dateAndStartTimeTimestamp)
         console.log('dateAndStartTimeTimestamp :', this.dateAndEndTimeTimestamp)
@@ -737,18 +985,17 @@ export class AHCStore {
                 // opdcart: {
                     "facility_id": userInfo?.facilities[0]?.org_id,
                     "patient_id": userInfo?.user_id,
-                    "serviceType": packageListObj?.data?.service_type, //"OP Package",
-                    "serviceType_code": packageListObj?.data?.service_type_code,
-                    "serviceItemName": packageListObj?.data?.service_item,
-                    "serviceItemCode": packageListObj?.data?.service_item_code,
+                    "serviceType": packageListObj?.data?.serviceType, //"OP Package",
+                    "serviceType_code": packageListObj?.data?.serviceType_code,
+                    "serviceItemName": packageListObj?.data?.serviceItemName,
+                    "serviceItemCode": packageListObj?.data?.serviceItemCode,
                     "service_code": selectedItem?.package?.serviceItemSearch?.service_code,
                     "provider_name": provider?.raw?.provider_name,
                     "provider_code": provider?.raw?.provider_code,
-                    "is_home_collection": provider?.raw?.extra_data?.is_home_collection,
-                    "is_centre_visit": provider?.raw?.extra_data?.is_centre_visit,
-                    "home_collection_code": provider?.raw?.extra_data?.home_collection_code,
-                    "inclinic_code": provider?.raw?.extra_data?.inclinic_code,
-                    "wellness_centre_code": "",
+                    "is_home_collection": packageListObj?.data?.is_home_collection,
+                    "is_centre_visit": packageListObj?.data?.is_centre_visit,
+                    "home_collection_code": packageListObj?.data?.home_collection_code,
+                    "inclinic_code": packageListObj?.data?.inclinic_code,
                     "mrp": selectedItem?.package?.serviceItemSearch?.mrp,
                     "selling_discount_rate": selectedItem?.package?.serviceItemSearch?.selling_discount_rate,
                     "selling_amount": selectedItem?.package?.serviceItemSearch?.selling_amount,
@@ -760,13 +1007,13 @@ export class AHCStore {
                     "patient_pincode": pincodeAndLocation?.pincode,
                     "patient_city": pincodeAndLocation?.city,
                     "patient_state": pincodeAndLocation?.state,
-                    "department_name": provider?.raw?.extra_data?.department_name,
-                    "department_id": provider?.raw?.extra_data?.department_id,
-                    "subDepartment_name": provider?.raw?.extra_data?.subDepartment_name,
-                    "subDepartment_id": provider?.raw?.extra_data?.subDepartment_id,
-                    "serviceItemId": provider?.raw?.extra_data?.serviceItemId,
-                    "is_cug": provider?.raw?.extra_data?.is_cug,
-                    "cug_code": provider?.raw?.extra_data?.cug_code,
+                    "department_name": packageListObj?.data?.department_name,
+                    "department_id": packageListObj?.data?.department_id,
+                    "subDepartment_name": packageListObj?.data?.subDepartment_name,
+                    "subDepartment_id": packageListObj?.data?.subDepartment_id,
+                    "serviceItemId": packageListObj?.data?.serviceItemId,
+                    "is_cug": packageListObj?.data?.is_cug,
+                    "cug_code": packageListObj?.data?.cug_code,
                     "patient_latitude": pincodeAndLocation?.latitude,
                     "patient_longitude": pincodeAndLocation?.longitude,
                     "is_clear_current_cart": null,
@@ -774,15 +1021,18 @@ export class AHCStore {
                     "package_sub_type_code": packageListObj?.data?.package_sub_type_code,
                     "package_type": packageListObj?.data?.package_type,
                     "package_type_code": packageListObj?.data?.package_type_code,
-                    "bg_code": packageListObj?.data?.bg_code,
-                    "bg_name": packageListObj?.data?.bg_name,
-                    "bp_code": packageListObj?.data?.bp_code,
-                    "bp_name": packageListObj?.data?.bp_name,
+                    "mode_of_appointment": "opd_network",
+                    
+                    // "wellness_centre_code": "",
+                    // "bg_code": packageListObj?.data?.bg_code,
+                    // "bg_name": packageListObj?.data?.bg_name,
+                    // "bp_code": packageListObj?.data?.bp_code,
+                    // "bp_name": packageListObj?.data?.bp_name,
                     // "bp_service_item_id": "ddb97360-c21b-11f1-97e2-eadcbe87e341-51",
-                    "bp_service_item_id": packageListObj?.data?.id,
+                    // "bp_service_item_id": packageListObj?.data?.id,
                     "payer_id": packageListObj?.data?.payer_id,
                     "payer_name": packageListObj?.data?.payer_name,
-                    "tag_data": [],
+                    // "tag_data": [],
                     "serviceDate": this.startDateTimeStamp,
                     "serviceStartTime": this.dateAndStartTimeTimestamp,
                     "serviceEndTime": this.dateAndEndTimeTimestamp,
@@ -790,7 +1040,6 @@ export class AHCStore {
                     "slotNo": selectedSlots?.raw?.slot_id,
                     "slot": selectedSlots?.raw?.slot || selectedSlots?.label,
                     "slot_type": slotResponse?.slot_type,
-                    "mode_of_appointment": "opd_network"
                 // }
             }
         }
@@ -869,11 +1118,12 @@ export class AHCStore {
         const pincodeAndLocation = this.location.place();
         const packageListObj =this.AHC();
         const selectedSlots = this.AHCSelectedSlot();
+        const assignment = this.policyStore.assignment()
         // const cartRes = cartResponse?.cart_snapshot?.opdcart;
         const cartRes = cartResponse?.cart_snapshot;
         const cartId = cartResponse?.id
         let payload = {
-            policy_id: "238c2e20-cb8e-11f1-8207-5ab01a7f1a07-1", //<-- Test CUG //"786123",--> testprod
+            policy_id: assignment?.policy_id,
             ahc_route: selectedItem?.tile?.serviceType,
             checkout_snapshot: {
                 opdCheckout: {
@@ -882,30 +1132,30 @@ export class AHCStore {
                     "patient_id": cartRes?.patient_id,
                     "scheme_code": "",
                     "is_use_wallet": false,
-                    "bg_code": cartRes?.bg_code,
+                    // "bg_code": cartRes?.bg_code,  //-**************
                     "scheme_discount_applicable": false,
                     "type": "",
                     "uhId": userInfo?.user_roles[0]?.uhid,
                     "is_use_care_coin": false,
                     "orderedFrom": "Patient Portal",
-                    "ordering_facility_id": cartRes?.facility_id,
+                    // "ordering_facility_id": cartRes?.facility_id,
                     "old_serviceRequestId": "",
                     "provider_name": provider?.raw?.provider_name,
                     "provider_code": provider?.raw?.provider_code,
                      "op_services" : [
                         {
-                            "serviceItemId": provider?.raw?.extra_data?.serviceItemId,
-                            "serviceItemName": provider?.raw?.extra_data?.serviceItemName,
-                            "service_code": provider?.raw?.extra_data?.service_code,
+                            "serviceItemId": cartRes?.serviceItemId,
+                            "serviceItemName": cartRes?.serviceItemName,
+                            "service_code": cartRes?.service_code,
                             "part_of_package": true, // -----------------
-                            "serviceItemCode": provider?.raw?.extra_data?.serviceItemCode,
+                            "serviceItemCode": cartRes?.serviceItemCode,
                             "over_booking_status": false,
                             "order_date_time": new Date().getTime(),  //need to confirm this value
-                            "service_type": provider?.raw?.extra_data.serviceType,
+                            "service_type": cartRes.serviceType,
                             "serviceName": provider?.raw?.extra_data?.serviceItemName,
                             "appointment_time": cartRes?.serviceEndTime,  //need to confirm this value
-                            "serviceType": provider?.raw?.extra_data?.serviceType,
-                            "serviceType_code": provider?.raw?.extra_data?.serviceType_code,
+                            "serviceType": cartRes?.serviceType,
+                            "serviceType_code": cartRes?.serviceType_code,
                             "slotId": cartRes?.slotId,
                             "extra_data": {
                                 "edit_price": false
@@ -914,24 +1164,24 @@ export class AHCStore {
                             "serviceDate": cartRes?.serviceDate,
                             "serviceStartTime": cartRes?.serviceStartTime,
                             "serviceEndTime": cartRes?.serviceEndTime,
-                            "department_id": provider?.raw?.extra_data?.department_id, //"fcf91730-6302-11ec-8c2d-6ef3f61dec40-51",
-                            "department_name": provider?.raw?.extra_data?.department_name,//"Health Checkup",
-                            "subDepartment_id": provider?.raw?.extra_data?.subDepartment_id,//"a5c81af1-64ac-11ec-a778-1a3a2074e682-83",
-                            "subDepartment_name": provider?.raw?.extra_data?.subDepartment_name, //"Health Checkup",
+                            "department_id": cartRes?.department_id, //"fcf91730-6302-11ec-8c2d-6ef3f61dec40-51",
+                            "department_name": cartRes?.department_name,//"Health Checkup",
+                            "subDepartment_id": cartRes?.subDepartment_id,//"a5c81af1-64ac-11ec-a778-1a3a2074e682-83",
+                            "subDepartment_name": cartRes?.subDepartment_name, //"Health Checkup",
                             "qty": 1,  //need to confirm this value
                             "cart_id": cartRes?.id , //cartId,  //need to confirm this value
                             "inclinic_code": cartRes?.inclinic_code,
                             "is_centre_visit": cartRes?.is_centre_visit,
                             "is_home_collection": cartRes?.is_home_collection,
-                            "logo_id": provider?.raw?.extra_data?.logo_id,
+                            "logo_id": cartRes?.logo_id,
                             "doctor_profile_path": "",
-                            "patient_instructions": provider?.raw?.extra_data?.patient_instructions,
+                            "patient_instructions": cartRes?.patient_instructions,
                             "slot_type": cartRes?.slot_type,
                             "slot": cartRes?.slot,
                             "center_name": provider?.name,
                             "center_code": provider?.code,
                             "home_collection_code": cartRes?.home_collection_code,
-                            "bp_service_item_id": packageListObj?.data?.id,
+                            // "bp_service_item_id": packageListObj?.data?.id,
                             "patient_pincode": cartRes?.patient_pincode,
                             "patient_city": pincodeAndLocation?.city,
                             "patient_state": cartRes?.patient_state,
@@ -939,16 +1189,16 @@ export class AHCStore {
                             "package_sub_type_code": cartRes?.package_sub_type_code,
                             "package_type": cartRes?.package_type,
                             "package_type_code": cartRes?.package_type_code,
-                            package_serviceRequestId: selectedItem?.package?.packageServiceItemsStatusInfo && selectedItem?.package?.packageServiceItemsStatusInfo.length > 0 && selectedItem?.package?.packageServiceItemsStatusInfo[0]?.package_serviceRequestId?.package_serviceRequestId ?  selectedItem?.package?.packageServiceItemsStatusInfo[0]?.package_serviceRequestId : ""
+                            // package_serviceRequestId: selectedItem?.package?.packageServiceItemsStatusInfo && selectedItem?.package?.packageServiceItemsStatusInfo.length > 0 && selectedItem?.package?.packageServiceItemsStatusInfo[0]?.package_serviceRequestId?.package_serviceRequestId ?  selectedItem?.package?.packageServiceItemsStatusInfo[0]?.package_serviceRequestId : ""
 
                         }
                     ],
-                    "bg_name": cartRes?.bg_name,
-                    "bp_code": cartRes?.bp_code,
-                    "bp_name": cartRes?.bp_name,
-                    "payer_details": {
-                        "payer_id": cartRes?.payer_id
-                    },
+                    // "bg_name": cartRes?.bg_name,
+                    // "bp_code": cartRes?.bp_code,
+                    // "bp_name": cartRes?.bp_name,
+                    // "payer_details": {
+                    //     "payer_id": cartRes?.payer_id
+                    // },
                     // "order_address": {
                     "center_address": {
                         "street1": this.appService.decryptText(cartRes?.center_address?.street1 || cartRes?.order_address?.street1, userInfo?.api_encryption_key), //decreypt
@@ -1001,6 +1251,7 @@ export class AHCStore {
         const actionName = 'book_appointment';
         const selectedItem: any = this.AHCSelectedItem();
         const checkoutResponse = this._ahcCheckoutResponse();
+        
         const checkoutRes = checkoutResponse?.checkout_snapshot?.opdCheckout;
         const checkoutCenterAddress = checkoutResponse?.checkout_snapshot?.opdCheckout?.center_address;
         const checkoutPatientDetails = checkoutResponse?.checkout_snapshot?.opdCheckout?.patient_details;
@@ -1025,16 +1276,16 @@ export class AHCStore {
                         },
                         // "order_address": { ...checkoutCenterAddress},
                         // "center_address": { ...checkoutCenterAddress},
-                        "selectedPackageServiceItemIds": [ 
-                            "hyundai-blood-sample-collection-at-home-below-40-female" //service_item_code
+                        "selectedPackageServiceItemIds": [ checkoutOpServiceDetails[0].serviceItemCode
+                            //"hyundai-blood-sample-collection-at-home-below-40-female" //service_item_code
                         ],
                         "facility_id": checkoutRes?.facility_id,
                         "scheme_code": "",
                         "is_use_wallet": checkoutRes?.is_use_wallet,
-                        "bg_code": checkoutRes?.bg_code,
-                        "bp_code": checkoutRes?.bp_code,
-                        "bg_name": checkoutRes?.bg_name,
-                        "bp_name": checkoutRes?.bp_name,
+                        // "bg_code": checkoutRes?.bg_code,
+                        // "bp_code": checkoutRes?.bp_code,
+                        // "bg_name": checkoutRes?.bg_name,
+                        // "bp_name": checkoutRes?.bp_name,
                         "scheme_discount_applicable": checkoutRes?.scheme_discount_applicable,
                         "cug_code": checkoutRes?.cug_code,
                         "doctor_id": "",
