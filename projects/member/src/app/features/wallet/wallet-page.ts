@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { formatMoney, money } from '../../core/domain/money';
 import { FamilyStore } from '../../core/family/family.store';
 import { PolicyStore } from '../../core/member/policy.store';
+import { UserInfoStore } from '../../core/session/userinfo.store';
 import { BackLink } from '../../shared/ui/back-link';
 import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyView, ErrorView } from '../../shared/ui/state-views';
@@ -185,6 +186,7 @@ export class WalletPage implements OnInit {
   protected readonly amount = formatMoney;
   protected readonly policyStore = inject(PolicyStore);
   protected readonly family = inject(FamilyStore);
+  protected readonly userStore = inject(UserInfoStore);
 
   protected readonly pageSize = 5;
   protected readonly visibleCount = signal<number>(5);
@@ -202,7 +204,15 @@ export class WalletPage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.policyStore.fetchWalletPassbook();
+    // Synchronize wallet context and trigger passbook retrieval.
+    // Resolves UHID from active/primary member, falling back to GET_MY_CONFIG via UserInfoStore if omitted in family list.
+    const active = this.family.activeMember();
+    const primary = this.family.family().find((m) => m.isPrimary);
+    const configUhId = this.userStore.getUhid();
+    const primaryUhId = primary?.uhid || configUhId;
+    const activeUhId = active?.uhid || (active?.isPrimary ? primaryUhId : null);
+    void this.policyStore.syncMemberWalletContext(activeUhId, primaryUhId);
+    this.policyStore.fetchWalletPassbook(activeUhId || primaryUhId);
   }
 
   protected readonly memberName = computed(() => this.family.activeMember()?.fullName ?? 'Member');

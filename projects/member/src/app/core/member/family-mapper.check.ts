@@ -67,4 +67,31 @@ assert.equal(unknown.initials, '?');
 assert.equal(unknown.dateOfBirth, null);
 assert.equal(unknown.gender, null);
 
+// Test fallback UHID from GET_MY_CONFIG when GET_FAMILY_LIST omits uhId
+const selfWithFallback = toFamilyMember(
+  {
+    id: 'r4',
+    mapped_id: 'MEM35637',
+    mapped_name: 'Shivam Kumar',
+    relationship_code: '',
+    uhId: '',
+  },
+  'MEM35637',
+  'CONFIG_UHID_999',
+);
+assert.equal(selfWithFallback.uhid, 'CONFIG_UHID_999');
+
+const depWithFallback = toFamilyMember(
+  {
+    id: 'r5',
+    mapped_id: 'MEM999',
+    mapped_name: 'Ramesh Kumar',
+    relationship_code: 'father',
+    uhId: '',
+  },
+  'MEM35637',
+  'CONFIG_UHID_999',
+);
+assert.equal(depWithFallback.uhid, null);
+
 console.log('family-mapper.check: ok');

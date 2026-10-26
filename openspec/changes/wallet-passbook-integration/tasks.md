@@ -16,6 +16,8 @@
 ## 3. Store Integration
 - [x] 3.1 Update `PolicyStore` to expose `enrichedPassbook = computed(...)` correlating `passbook()` and `consumptionCycles()`.
 - [x] 3.2 Update `WalletStore` to integrate passbook items into the unified wallet transactions signal.
+- [x] 3.3 Implement `GET_MY_CONFIG` UHID fallback in `UserInfoStore`, `FamilyStore`, and `PolicyStore` when `GET_FAMILY_LIST` omits `uhId` for the primary member.
+- [x] 3.4 Reconcile wallet total in `PolicyStore` to preserve policy base limit and `opd_consumption_cycle` when `OpdWalletAccountDto` is loaded.
 
 ## 4. UI Presentation
 - [x] 4.1 Update `WalletPage` Recent Activity section with enriched badges (Claim / Cashless, Reference ID, 9 OPD categories, date/time, amount, balance).

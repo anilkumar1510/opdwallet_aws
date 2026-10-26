@@ -10,7 +10,8 @@ This change enriches the live wallet passbook by correlating it with `opd_consum
 
 ## What Changes
 
-- **Live Passbook API Querying**: Integrates `GET /wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK&args=user_code:{uhId}` into `PolicyStore` and `WalletStore`, dynamically selecting between Floater (primary member UHID) and Individual (active dependent UHID) policy allocations.
+- **Live Passbook & Wallet API Querying**: Integrates `GET /wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK&args=user_code:{uhId}` and `GET /wallet/api/v1/wallet?queryId=GET_PAGE&filter=user_code:{uhId},status_id:active` into `PolicyStore` and `WalletStore`, dynamically selecting between Floater (primary member UHID) and Individual (active dependent UHID) policy allocations.
+- **Dynamic UHID Resolution via `GET_MY_CONFIG`**: When `GET_FAMILY_LIST` (`user_relationship_mapping`) omits the `uhId` for the signed-in primary member (`isSelf`), the system dynamically resolves the canonical `uhid` from the session configuration (`GET_MY_CONFIG` in `UserInfoStore`) without relying on hardcoded identifiers.
 - **DTOs and Data Mapping**: Defines `WalletPassbookDto` and `WalletPassbookItemDto` matching the live API payload.
 - **Multi-Source Enrichment via Consumption Cycles**: Correlates passbook ledger items with `opd_consumption_cycle` (via `wallet_txn_id`, `wallet_block_id`, or timestamp/amount correlation) to resolve:
   1. **Transaction Type**: Distinguishes between `Claim` (Reimbursement), `Cashless`, and `Recharge` / `Wallet Credit`.

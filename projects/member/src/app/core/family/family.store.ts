@@ -8,6 +8,7 @@ import { FamilyMemberResource, Relationship, toFamilyMember } from '../member/fa
 import { isRelationshipCoveredInPolicy } from '../member/policy.mapper';
 import { AppService } from '../http/api.service';
 import { SessionStore } from '../session/session.store';
+import { UserInfoStore } from '../session/userinfo.store';
 
 const ACTIVE_MEMBER_KEY = 'opd.activeMemberId';
 
@@ -26,6 +27,7 @@ export class FamilyStore {
 
   private readonly appService = inject(AppService);
   private readonly session = inject(SessionStore);
+  private readonly userStore = inject(UserInfoStore);
   private readonly policyStore = inject(PolicyStore);
 
   readonly rawFamily = this._family.asReadonly();
@@ -134,7 +136,11 @@ export class FamilyStore {
       this.policyStore.setActiveRelationship(relCode);
 
       const primary = this._family().find((m) => m.isPrimary);
-      void this.policyStore.syncMemberWalletContext(active?.uhid ?? null, primary?.uhid ?? null);
+      // Fallback: If GET_FAMILY_LIST omitted uhId for the primary member, retrieve it from GET_MY_CONFIG via UserInfoStore
+      const configUhId = this.userStore.getUhid();
+      const primaryUhId = primary?.uhid || configUhId;
+      const activeUhId = active?.uhid || (active?.isPrimary ? primaryUhId : null);
+      void this.policyStore.syncMemberWalletContext(activeUhId, primaryUhId);
 
       const targetPatientId = active?.memberId;
       if (targetPatientId) {
@@ -190,7 +196,9 @@ export class FamilyStore {
     const dynamicPatientId = primaryResource?.mapped_id || primaryResource?.user_id;
 
     if (dynamicPatientId) {
-      const familyMembers = resources.map((r) => toFamilyMember(r, dynamicPatientId));
+      // Injects the canonical UHID from GET_MY_CONFIG for Self when GET_FAMILY_LIST omits it
+      const configUhId = this.userStore.getUhid();
+      const familyMembers = resources.map((r) => toFamilyMember(r, dynamicPatientId, configUhId));
       familyMembers.sort((a, b) => {
         const aIsSelf = a.isPrimary || a.relationship === Relationship.Self || a.relationshipCode === 'self';
         const bIsSelf = b.isPrimary || b.relationship === Relationship.Self || b.relationshipCode === 'self';

@@ -555,6 +555,61 @@ export class NewClaimPage {
 
 
   protected readonly today = new Date().toISOString().slice(0, 10);
+
+  /**
+   * Configured claim submission expiry window (in days) from the active policy version (default 45 days).
+   * Restricts treatment date selection so users cannot file claims after policy expiry.
+   */
+  protected readonly claimExpiryDays = computed<number>(() => {
+    const version = this.policyStore.version();
+    const expiry = version?.claim_expiry;
+    return typeof expiry === 'number' && expiry > 0 ? expiry-1 : 45;
+  });
+
+  /**
+   * Minimum allowable treatment date (today - claimExpiryDays) formatted as YYYY-MM-DD.
+   * Bound to [min] on input#treatmentDate to disable older dates in the datepicker.
+   */
+  protected readonly minTreatmentDate = computed<string>(() => {
+    const days = this.claimExpiryDays();
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
+  /** Whether the user has entered a non-positive bill amount (<= 0). */
+  protected readonly isNegativeOrZeroBill = computed<boolean>(() => {
+    const val = this.billAmount();
+    return val !== null && val !== undefined && val <= 0;
+  });
+
+  /** Prevents typing negative signs, plus signs, and exponential notation in currency inputs. */
+  protected onAmountKeyDown(event: KeyboardEvent): void {
+    if (event.key === '-' || event.key === '+' || event.key === 'e' || event.key === 'E') {
+      event.preventDefault();
+    }
+  }
+
+  /** Prevents pasting negative numbers into the bill amount input. */
+  protected onAmountPaste(event: ClipboardEvent): void {
+    const text = event.clipboardData?.getData('text') ?? '';
+    if (text.includes('-') || text.includes('+')) {
+      event.preventDefault();
+    }
+  }
+
+  /** Handles bill amount changes, sanitizing inputs. */
+  protected onBillAmountChange(value: any): void {
+    if (value === null || value === undefined || value === '') {
+      this.billAmount.set(null);
+      return;
+    }
+    const num = Number(value);
+    this.billAmount.set(isNaN(num) ? null : num);
+  }
+
   protected readonly amount = (value: number) => formatMoney(money(value));
   data: any = {};
   eventData: any = [];
@@ -727,7 +782,13 @@ export class NewClaimPage {
       }
     }
     if (this.treatmentDate() === '') return 'Choose the treatment date.';
-    if ((this.billAmount() ?? 0) <= 0) return 'Enter the bill amount.';
+    if (this.treatmentDate() > this.today) return 'Treatment date cannot be in the future.';
+    if (this.treatmentDate() < this.minTreatmentDate()) {
+      return `Treatment date must be within the last ${this.claimExpiryDays()} days as per policy claim expiry rules.`;
+    }
+    const bill = this.billAmount();
+    if (bill === null || bill === undefined) return 'Enter the bill amount.';
+    if (bill <= 0) return 'Bill amount must be greater than zero.';
     return null;
   }
 
