@@ -1,7 +1,8 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 
-import { splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { MOCK_WALLET_BALANCE, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PolicyStore } from '../../core/member/policy.store';
 import { PaymentSplitView } from '../../shared/ui/payment-split';
 
 import { BenefitCategory } from '../../core/domain/codes';
@@ -331,6 +332,14 @@ export function readUploadedDocId(body: unknown): string | null {
 })
 export class PharmacyPage {
   protected readonly claimModes = inject(ClaimModeStore);
+  private readonly policyStore = inject(PolicyStore);
+  /**
+   * Wallet balance this benefit can draw on — its pool's when it belongs to
+   * one, else the total wallet — once the policy loads; the mock until then.
+   */
+  protected readonly walletBalance = computed(() =>
+    this.policyStore.version() ? this.policyStore.availableBalanceFor(BenefitCategory.Pharmacy) : MOCK_WALLET_BALANCE,
+  );
   protected readonly BenefitCategory = BenefitCategory;
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
@@ -490,8 +499,8 @@ export class PharmacyPage {
   /** Wallet share + co-payment on the current (reducible) cart. */
   protected readonly pay = computed(() => {
     const cartValue = this.cart().reduce((s, i) => s + i.qty * i.unitPrice, 0);
-    // Co-payment first, then the per-transaction limit.
-    const split = splitPayment(cartValue, percentCopay(COPAY_PCT), PER_TXN_LIMIT);
+    // Co-payment first, then the per-transaction limit, then the wallet balance.
+    const split = splitPayment(cartValue, percentCopay(COPAY_PCT), PER_TXN_LIMIT, this.walletBalance());
     return { cartValue, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
   });
 

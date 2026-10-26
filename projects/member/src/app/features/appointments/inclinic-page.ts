@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
 
-import { splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { MOCK_WALLET_BALANCE, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PolicyStore } from '../../core/member/policy.store';
 import { PaymentSplitView } from '../../shared/ui/payment-split';
 
 import { BenefitCategory } from '../../core/domain/codes';
@@ -292,6 +293,14 @@ type Step =
 })
 export class InClinicPage {
   protected readonly claimModes = inject(ClaimModeStore);
+  private readonly policyStore = inject(PolicyStore);
+  /**
+   * Wallet balance this benefit can draw on — its pool's when it belongs to
+   * one, else the total wallet — once the policy loads; the mock until then.
+   */
+  protected readonly walletBalance = computed(() =>
+    this.policyStore.version() ? this.policyStore.availableBalanceFor(BenefitCategory.InClinicConsultation) : MOCK_WALLET_BALANCE,
+  );
   protected readonly BenefitCategory = BenefitCategory;
   protected readonly specialities = SPECIALITIES;
   protected readonly patients = PATIENTS;
@@ -338,8 +347,8 @@ export class InClinicPage {
 
   protected readonly pay = computed(() => {
     const fee = this.doctor()?.fee ?? 0;
-    // Co-payment first, then the per-transaction limit.
-    const split = splitPayment(fee, percentCopay(COPAY_PCT), PER_TXN_LIMIT);
+    // Co-payment first, then the per-transaction limit, then the wallet balance.
+    const split = splitPayment(fee, percentCopay(COPAY_PCT), PER_TXN_LIMIT, this.walletBalance());
     return { fee, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
   });
 

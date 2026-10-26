@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal, inject } from '@angular/core';
 
-import { splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { MOCK_WALLET_BALANCE, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PolicyStore } from '../../core/member/policy.store';
 import { PaymentSplitView } from '../../shared/ui/payment-split';
 
 import { BenefitCategory } from '../../core/domain/codes';
@@ -549,9 +550,17 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
 })
 export class DiagnosticsPage {
   protected readonly claimModes = inject(ClaimModeStore);
-  protected readonly BenefitCategory = BenefitCategory;
+  private readonly policyStore = inject(PolicyStore);
   /** The benefit this page books, for the policy's claim mode. */
   protected readonly claimCategory = computed(() => (this.kind() === 'RADIOLOGY' ? BenefitCategory.Radiology : BenefitCategory.Pathology));
+  /**
+   * Wallet balance this benefit can draw on — its pool's when it belongs to
+   * one, else the total wallet — once the policy loads; the mock until then.
+   */
+  protected readonly walletBalance = computed(() =>
+    this.policyStore.version() ? this.policyStore.availableBalanceFor(this.claimCategory()) : MOCK_WALLET_BALANCE,
+  );
+  protected readonly BenefitCategory = BenefitCategory;
   /** Bound from route data via withComponentInputBinding(). */
   readonly kind = input<Kind>('PATHOLOGY');
 
@@ -619,8 +628,8 @@ export class DiagnosticsPage {
   protected readonly collectionCharge = computed(() => (this.mode() === 'home' ? COLLECTION_CHARGE : 0));
   protected readonly pay = computed(() => {
     const value = this.testValue() + this.collectionCharge();
-    // Co-payment first, then the per-transaction limit.
-    const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT);
+    // Co-payment first, then the per-transaction limit, then the wallet balance.
+    const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT, this.walletBalance());
     return { value, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
   });
 

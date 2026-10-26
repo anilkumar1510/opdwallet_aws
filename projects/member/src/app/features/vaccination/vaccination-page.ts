@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
 
-import { splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { MOCK_WALLET_BALANCE, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PolicyStore } from '../../core/member/policy.store';
 import { PaymentSplitView } from '../../shared/ui/payment-split';
 
 import { BenefitCategory } from '../../core/domain/codes';
@@ -47,9 +48,9 @@ const SLOT_TIMES = ['10:00 AM', '12:30 PM', '3:00 PM', '6:30 PM'];
 const PER_TXN_LIMIT = 400;
 const COPAY_PCT = 20;
 
-/** Co-payment first, then the per-transaction limit. */
-function breakdown(value: number) {
-  const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT);
+/** Co-payment first, then the per-transaction limit, then the wallet balance. */
+function breakdown(value: number, balance: number) {
+  const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT, balance);
   return { value, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
 }
 
@@ -179,6 +180,14 @@ type Step = 'vaccine' | 'details' | 'provider' | 'pending' | 'cart' | 'receipt' 
 })
 export class VaccinationPage {
   protected readonly claimModes = inject(ClaimModeStore);
+  private readonly policyStore = inject(PolicyStore);
+  /**
+   * Wallet balance this benefit can draw on — its pool's when it belongs to
+   * one, else the total wallet — once the policy loads; the mock until then.
+   */
+  protected readonly walletBalance = computed(() =>
+    this.policyStore.version() ? this.policyStore.availableBalanceFor(BenefitCategory.Vaccination) : MOCK_WALLET_BALANCE,
+  );
   protected readonly BenefitCategory = BenefitCategory;
   protected readonly vaccines = VACCINES;
   protected readonly doses = DOSES;
@@ -207,7 +216,7 @@ export class VaccinationPage {
   protected readonly steps: Step[] = ['vaccine', 'details', 'provider', 'pending', 'cart', 'receipt', 'visit', 'completed'];
   protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'vaccine');
 
-  protected readonly pay = computed(() => breakdown(this.vaccine()?.price ?? 0));
+  protected readonly pay = computed(() => breakdown(this.vaccine()?.price ?? 0, this.walletBalance()));
 
   protected primaryLabel(): string {
     switch (this.currentStep()) {

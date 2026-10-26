@@ -8,6 +8,8 @@ import { PolicyStore } from '../../core/member/policy.store';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { AppService } from '../../core/http/api.service';
 import { ClaimOption } from '../../shared/ui/claim-option';
+import { splitPayment } from '../../core/domain/payment-split';
+import { PaymentSplitView } from '../../shared/ui/payment-split';
 import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
 import { AgoraService } from '../../services/agora.service';
 import { AgoraVideoComponent } from './components/agora-video.component';
@@ -34,8 +36,9 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
     WizardStepComponent,
     AppointmentDateSliderComponent,
     AgoraVideoComponent,
-    ClaimOption
-],
+    ClaimOption,
+    PaymentSplitView,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
@@ -217,51 +220,14 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                     }
                     <div class="space-y-4">
                       <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
-                      <!-- Co-payment first, then the per transaction limit. -->
-                      <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ pay().fee }}</dd></div>
-                        @if (pay().copay > 0) {
-                          <div class="flex justify-between">
-                            <dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }}) <span class="text-xs text-ink-500">· paid by you</span></dt>
-                            <dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd>
-                          </div>
-                          <div class="flex justify-between border-t border-surface-border pt-2">
-                            <dt class="text-ink-700">Amount after co-payment</dt>
-                            <dd class="font-medium text-ink-900">₹{{ pay().afterCopay }}</dd>
-                          </div>
-                        }
-                        <div class="flex justify-between">
-                          <dt class="text-ink-700">
-                            @switch (pay().capReason) {
-                              @case ('ceiling') { Doctor fee ceiling }
-                              @case ('balance') { Wallet balance available }
-                              @default { Per transaction limit }
-                            }
-                          </dt>
-                          <dd class="font-medium text-ink-900">₹{{ pay().cap }}</dd>
-                        </div>
-                        <div class="flex justify-between">
-                          <dt class="text-ink-700">Paid from Corporate Wallet <span class="text-xs text-ink-500">· the lower of the two</span></dt>
-                          <dd class="font-medium text-green-700">₹{{ pay().walletBlock }}</dd>
-                        </div>
-                        @if (pay().excess > 0) {
-                          <div class="flex justify-between">
-                            <dt class="text-ink-700">
-                              @switch (pay().capReason) {
-                                @case ('ceiling') { Above doctor fee ceiling }
-                                @case ('balance') { Above wallet balance }
-                                @default { Above the limit }
-                              }
-                              <span class="text-xs text-ink-500">· paid by you</span>
-                            </dt>
-                            <dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd>
-                          </div>
-                        }
-                        <div class="flex justify-between border-t border-surface-border pt-2">
-                          <dt class="font-semibold text-ink-900">Total Payable by Patient</dt>
-                          <dd class="text-lg font-bold" [class.text-[#034DA2]]="pay().selfPay > 0" [class.text-green-700]="pay().selfPay === 0">₹{{ pay().selfPay }}</dd>
-                        </div>
-                      </dl>
+                      <!-- Co-payment first, then the per transaction limit, then the wallet balance. -->
+                      <opd-payment-split
+                        [split]="pay().split"
+                        billLabel="Consultation fee"
+                        [limitLabel]="pay().ceilingBites ? 'Doctor fee ceiling' : 'Per transaction limit'"
+                        walletLabel="Paid from Corporate Wallet"
+                        youPayLabel="Total Payable by Patient"
+                      />
                       @if (pay().selfPay > 0) {
                         <p class="mt-3 text-xs text-amber-800 bg-amber-50 rounded-xl p-3 border border-amber-200">
                           ℹ Patient payable amount of <strong>₹{{ pay().selfPay }}</strong>
@@ -679,35 +645,33 @@ export class OnlineConsultPage implements OnInit {
     const fee = this.doctor()?.fee ?? 0;
     const perTxnLimit = this.perTxn();
     const ceiling = this.doctorFeeCeiling();
-    const cat = this.policyCategory();
-    const poolCode = cat?.pool_code?.trim();
-    const pool = poolCode
-      ? this.policyStore.pools().find(
-          (p) =>
-            p.code?.trim().toUpperCase() === poolCode?.toUpperCase() ||
-            p.id?.trim().toUpperCase() === poolCode?.toUpperCase(),
-        )
-      : null;
-    const availableBalance = pool ? pool.available.amount : this.policyStore.walletTotal().available.amount;
+    // The benefit's pool balance when it is assigned to a pool, else the total wallet.
+    const pat = this.patient();
+    const availableBalance = this.policyStore.availableBalanceFor(BenefitCategory.OnlineConsultation, pat?.rel);
 
-    // Co-payment first, on the whole fee; then the wallet pays the lower of
-    // what is left and its cap — the per-transaction limit, narrowed by the
-    // doctor-fee ceiling or the pool balance when either is lower.
-    const copay = this.copayMode() === 'flat'
-      ? Math.min(this.copayPct(), fee)
-      : Math.round((fee * this.copayPct()) / 100);
-    const afterCopay = fee - copay;
-    const effectiveCap = Math.min(perTxnLimit, ceiling ?? Infinity, availableBalance);
-    const walletBlock = Math.max(0, Math.min(afterCopay, effectiveCap));
-    const excess = afterCopay - walletBlock;
-    const selfPay = copay + excess;
-    const capReason: 'limit' | 'ceiling' | 'balance' =
-      availableBalance < Math.min(perTxnLimit, ceiling ?? Infinity)
-        ? 'balance'
-        : ceiling !== null && ceiling < perTxnLimit
-          ? 'ceiling'
-          : 'limit';
-    return { fee, covered: walletBlock, copay, afterCopay, walletBlock, excess, selfPay, ceiling, perTxnLimit, cap: effectiveCap, capReason };
+    // Co-payment first, on the whole fee; then the per-transaction limit
+    // (narrowed by the doctor-fee ceiling when that is lower); then the
+    // pool's wallet balance.
+    const ceilingBites = ceiling !== null && ceiling < perTxnLimit;
+    const split = splitPayment(
+      fee,
+      { mode: this.copayMode() === 'flat' ? 'FLAT' : 'PERCENT', value: this.copayPct() },
+      ceilingBites ? ceiling : perTxnLimit,
+      availableBalance,
+    );
+    return {
+      fee,
+      split,
+      ceilingBites,
+      covered: split.walletPays,
+      copay: split.copayAmount,
+      afterCopay: split.afterCopay,
+      walletBlock: split.walletPays,
+      excess: split.aboveLimit + split.aboveBalance,
+      selfPay: split.memberPays,
+      ceiling,
+      perTxnLimit,
+    };
   });
 
   protected readonly selectedSpecialityName = computed(() => {

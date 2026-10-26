@@ -32,6 +32,7 @@ import {
 } from './policy.mapper';
 import { WalletPool } from './wallet-pool.model';
 import { Money, money } from '../domain/money';
+import { BenefitCategory, toBenefitCategory } from '../domain/codes';
 import { WalletCategoryBalance } from '../wallet/wallet.model';
 
 /**
@@ -146,6 +147,25 @@ export class PolicyStore {
   readonly pools = computed(() =>
     toPoolsFromApiAndVersion(this._rawPools(), this._version(), this._activeRelationshipCode(), this._consumptionCycles()),
   );
+
+  /**
+   * The wallet balance a benefit can draw on: its pool's available balance
+   * when the policy assigns the benefit to a pool, otherwise the total wallet
+   * balance. Cashless payments are capped at this, after co-payment and limit.
+   */
+  availableBalanceFor(category: BenefitCategory, relationshipCode?: string): number {
+    const version = this._version();
+    const relCode = (relationshipCode || this._activeRelationshipCode() || 'self').trim().toLowerCase();
+    const rel = version ? (findRelationshipInVersion(version, relCode) ?? getPrimaryRelationship(version)) : undefined;
+    const cat = rel?.categories?.find(
+      (c) => toBenefitCategory(c.category_code) === category || toBenefitCategory(c.category_name) === category,
+    );
+    const poolCode = cat?.pool_code?.trim().toUpperCase();
+    const pool = poolCode
+      ? this.pools().find((p) => p.code?.trim().toUpperCase() === poolCode || p.id?.trim().toUpperCase() === poolCode)
+      : undefined;
+    return pool ? pool.available.amount : this.walletTotal().available.amount;
+  }
 
   /**
    * Indicates whether the policy requires both digital and physical original documents

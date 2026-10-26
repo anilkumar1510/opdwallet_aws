@@ -31,8 +31,13 @@ const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
       <div class="flex justify-between gap-3">
         <dt class="text-ink-700">{{ limitLabel() }}</dt><dd class="font-medium text-ink-900">{{ s.limit !== null ? '₹' + n(s.limit) : 'No limit' }}</dd>
       </div>
+      @if (s.balance !== null) {
+        <div class="flex justify-between gap-3">
+          <dt class="text-ink-700">Wallet balance available</dt><dd class="font-medium text-ink-900">₹{{ n(s.balance) }}</dd>
+        </div>
+      }
       <div class="flex justify-between gap-3">
-        <dt class="text-ink-700">{{ walletLabel() }} <span class="text-xs text-ink-500">· the lower of the two</span></dt>
+        <dt class="text-ink-700">{{ walletLabel() }} <span class="text-xs text-ink-500">· {{ s.balance !== null ? 'the lowest of these' : 'the lower of the two' }}</span></dt>
         <dd class="font-medium text-success-700">₹{{ n(s.walletPays) }}</dd>
       </div>
       @if (s.aboveLimit > 0) {
@@ -41,11 +46,21 @@ const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
           <dd class="font-medium text-ink-900">₹{{ n(s.aboveLimit) }}</dd>
         </div>
       }
+      @if (s.aboveBalance > 0) {
+        <div class="flex justify-between gap-3">
+          <dt class="text-ink-700">Above wallet balance <span class="text-xs text-ink-500">· paid by you</span></dt>
+          <dd class="font-medium text-ink-900">₹{{ n(s.aboveBalance) }}</dd>
+        </div>
+      }
       <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
         <dt class="font-semibold text-ink-900">
           {{ youPayLabel() }}
-          @if (s.aboveLimit > 0) {
-            <span class="block text-xs font-normal text-ink-500">Co-payment ₹{{ n(s.copayAmount) }} + above the limit ₹{{ n(s.aboveLimit) }}</span>
+          @if (s.aboveLimit > 0 || s.aboveBalance > 0) {
+            <span class="block text-xs font-normal text-ink-500">
+              Co-payment ₹{{ n(s.copayAmount) }}
+              @if (s.aboveLimit > 0) { + above the limit ₹{{ n(s.aboveLimit) }} }
+              @if (s.aboveBalance > 0) { + above wallet balance ₹{{ n(s.aboveBalance) }} }
+            </span>
           }
         </dt>
         <dd class="text-lg font-bold text-ink-900">₹{{ n(s.memberPays) }}</dd>
