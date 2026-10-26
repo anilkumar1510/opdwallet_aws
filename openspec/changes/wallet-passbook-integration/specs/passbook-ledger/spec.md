@@ -21,6 +21,37 @@ The system SHALL retrieve wallet passbook records from `/wallet/api/v1/wallet_pa
 
 ---
 
+### Requirement: UHID Resolution via GET_MY_CONFIG Session Fallback
+When `GET_FAMILY_LIST` (`user_relationship_mapping`) omits the `uhId` property for the signed-in member (Self / `isSelf`), the system SHALL resolve the member's UHID dynamically from the session configuration retrieved from `GET_MY_CONFIG` (`application_master`) via `UserInfoStore.getUhid()`, preventing unhandled null UHID states across wallet account and passbook API queries.
+
+#### Scenario: Primary member has null uhId in family list
+- **WHEN** `GET_FAMILY_LIST` returns a primary member record where `uhId` is null or empty
+- **THEN** `family-mapper` resolves the member's `uhid` using `UserInfoStore.getUhid()` from `GET_MY_CONFIG`
+- **AND** `PolicyStore.resolveAndLoadWallet()` triggers `GET /wallet/api/v1/wallet?queryId=GET_PAGE&filter=user_code:{configUhId},status_id:active`
+- **AND** `PolicyStore.fetchWalletPassbook()` queries `GET /wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK&args=user_code:{configUhId}`
+
+#### Scenario: Dependent member has explicit uhId in family list
+- **WHEN** `GET_FAMILY_LIST` returns a dependent member record with an explicit non-null `uhId`
+- **THEN** the dependent's explicit `uhId` is preserved and used for individual allocation queries
+
+---
+
+### Requirement: Wallet Total & Consumption Preservation
+The system SHALL reconcile live wallet account details with policy version limits and consumption cycles:
+1. `allocated` SHALL equal `basePolicyLimit + topup`, ensuring corporate entitlement is preserved even if `account.total_topup_amt` is zero or omitted.
+2. `consumed` SHALL prioritize clinical consumption recorded in `opd_consumption_cycle` (`versionTotal.consumed`), falling back to `allocated - available` only if no consumption cycle records exist.
+3. `available` SHALL reflect live `account.avl_bal` from the wallet account when available.
+
+#### Scenario: Wallet account loaded with zero total_topup_amt
+- **WHEN** a live wallet account record is loaded with `total_topup_amt: 0` and `avl_bal: 5000`
+- **AND** the active policy version specifies an annual limit of `₹26,000`
+- **THEN** `walletTotal.allocated` evaluates to `₹26,000` (not `₹0`)
+- **AND** `hasPolicy()` remains `true`
+- **AND** `walletTotal.consumed` retains the consolidated consumed sum from `opd_consumption_cycle`
+- **AND** the consumption UI (Used, Allocated, Left, progress bar) remains visible
+
+---
+
 ### Requirement: Transaction Type Classification
 Each passbook entry SHALL be classified as either a `Claim` (Reimbursement), `Cashless` booking, or `Recharge` / `Wallet Credit`.
 

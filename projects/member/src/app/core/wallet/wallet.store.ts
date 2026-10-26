@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { FamilyStore } from '../family/family.store';
 import { AppError, appError, isAppError } from '../http/app-error';
 import { SessionStore } from '../session/session.store';
+import { UserInfoStore } from '../session/userinfo.store';
 import { AppService } from '../http/api.service';
 import { PolicyStore } from '../member/policy.store';
 import { WalletBalanceDto, WalletTransactionsResponseDto } from './wallet.dto';
@@ -49,6 +50,7 @@ export class WalletStore {
   private readonly session = inject(SessionStore);
   private readonly appService = inject(AppService);
   private readonly policyStore = inject(PolicyStore);
+  private readonly userStore = inject(UserInfoStore);
 
   private readonly _wallet = signal<Wallet | null>(null);
   private readonly _transactions = signal<readonly WalletTransaction[]>([]);
@@ -117,11 +119,16 @@ export class WalletStore {
     this._error.set(null);
     this._limit.set(PAGE_SIZE);
 
-    // Trigger live wallet_passbook fetch
+    // Trigger live wallet_passbook fetch and wallet account resolution.
+    // Resolves UHID from primary/active member, falling back to GET_MY_CONFIG via UserInfoStore if omitted in family list.
     const activeMember = this.family.activeMember();
     const primaryMember = this.family.family().find((m) => m.isPrimary);
-    const uhId = primaryMember?.uhid || activeMember?.uhid || 'HH-448725';
-    this.policyStore.fetchWalletPassbook(uhId);
+    const configUhId = this.userStore.getUhid();
+    const uhId = primaryMember?.uhid || activeMember?.uhid || configUhId;
+    void this.policyStore.syncMemberWalletContext(activeMember?.uhid ?? null, primaryMember?.uhid ?? configUhId);
+    if (uhId) {
+      this.policyStore.fetchWalletPassbook(uhId);
+    }
 
     try {
       const [balance, history, everything] = await Promise.all([

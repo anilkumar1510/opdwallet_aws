@@ -4,6 +4,7 @@ import { AppError, appError } from '../http/app-error';
 import { AppService } from '../http/api.service';
 import { ClaimCategory } from '../claims/claim.mapper';
 import { SessionStore } from '../session/session.store';
+import { UserInfoStore } from '../session/userinfo.store';
 import { Policy } from './policy';
 import { PolicyDetail } from './policy-detail';
 import {
@@ -44,6 +45,7 @@ import { WalletCategoryBalance } from '../wallet/wallet.model';
 export class PolicyStore {
   private readonly appService = inject(AppService);
   private readonly session = inject(SessionStore);
+  private readonly userStore = inject(UserInfoStore);
 
   private readonly _assignment = signal<OpdPolicyMemberAssignmentDto | null>(null);
   private readonly _version = signal<OpdPolicyVersionDto | null>(null);
@@ -110,17 +112,31 @@ export class PolicyStore {
 
   readonly walletTotal = computed(() => {
     const account = this._walletAccount();
+    const versionTotal = toWalletTotalFromVersion(
+      this._version(),
+      this._activeRelationshipCode(),
+      this._consumptionCycles(),
+    );
+
     if (account) {
-      const allocated = Number(account.total_topup_amt) || 0;
-      const available = Number(account.avl_bal) || 0;
-      const consumed = Math.max(0, allocated - available);
+      const baseLimit = this.basePolicyLimit() || versionTotal.allocated.amount;
+      const topup = Math.max(0, (Number(account.total_topup_amt) || 0) - baseLimit);
+      const allocated = baseLimit + topup;
+      const available = Number.isFinite(Number(account.avl_bal))
+        ? Number(account.avl_bal)
+        : versionTotal.available.amount;
+      // Preserves actual clinical consumption tracked in opd_consumption_cycle
+      const consumed = versionTotal.consumed.amount > 0
+        ? versionTotal.consumed
+        : money(Math.max(0, allocated - available));
+
       return {
         available: money(available),
         allocated: money(allocated),
-        consumed: money(consumed),
+        consumed,
       };
     }
-    return toWalletTotalFromVersion(this._version(), this._activeRelationshipCode(), this._consumptionCycles());
+    return versionTotal;
   });
 
   readonly categories = computed(() =>
@@ -335,12 +351,22 @@ export class PolicyStore {
     await this.resolveAndLoadWallet(forceRefresh);
   }
 
+  /**
+   * Resolves the target UHID and fetches the live wallet account (/wallet/api/v1/wallet?queryId=GET_PAGE...).
+   *
+   * Target UHID resolution rules:
+   * 1. FLOATER allocation: Pools at the primary member level (`_primaryUhId()`).
+   * 2. INDIVIDUAL allocation: Targets the active selected member (`_activeUhId()`).
+   * 3. Fallback: If family list omitted the primary member's UHID, uses `UserInfoStore.getUhid()` from GET_MY_CONFIG.
+   */
   private async resolveAndLoadWallet(forceRefresh: boolean = false): Promise<void> {
     const version = this._version();
     const isFloater = (version?.allocation_type || '').trim().toUpperCase() === 'FLOATER';
+    // Fallback dynamically to GET_MY_CONFIG UHID if family list did not supply it
+    const configUhId = this.userStore.getUhid();
     const targetUhId = isFloater
-      ? (this._primaryUhId() || this._activeUhId())
-      : (this._activeUhId() || this._primaryUhId());
+      ? (this._primaryUhId() || this._activeUhId() || configUhId)
+      : (this._activeUhId() || this._primaryUhId() || configUhId);
 
     if (!targetUhId) {
       this._walletAccount.set(null);
@@ -383,17 +409,26 @@ export class PolicyStore {
     }
   }
 
+  /**
+   * Fetches the member's wallet passbook history (/wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK&args=user_code:...).
+   * Resolves target UHID via Floater/Individual rules and falls back to GET_MY_CONFIG UHID via UserInfoStore.
+   */
   fetchWalletPassbook(uhId?: string | null): void {
     const version = this._version();
     const isFloater = (version?.allocation_type || '').trim().toUpperCase() === 'FLOATER';
     const activeMemberUhId = this._activeUhId();
     const primaryMemberUhId = this._primaryUhId();
     const walletAccountUserCode = this.walletAccount()?.user_code;
+    const configUhId = this.userStore.getUhid();
 
     const targetUhId = uhId?.trim()
       || (isFloater ? (primaryMemberUhId || activeMemberUhId) : (activeMemberUhId || primaryMemberUhId))
       || walletAccountUserCode
-      || 'HH-448725';
+      || configUhId;
+
+    if (!targetUhId) {
+      return;
+    }
 
     this._passbookLoading.set(true);
     this._passbookError.set(null);
