@@ -373,16 +373,26 @@ export class OpdConsultationService {
 
   // Doctor Listing API - TELE_DOCTOR_LISTING
   getDoctors(
-    specialityCode: string = 'GENERAL PHYSICIAN',
+    specialityFilterCode: string = 'general physician',
     consultationType: string = 'video',
+    facilityId: string = '4c5baa60-db39-11f0-b303-8ae465e2df26-45',
+    baseSpecialityCode: string = 'GENERAL PHYSICIAN',
     search: string = '',
     pageSize: number = 20,
     pageNo: number = 0
   ): Observable<Doctor[]> {
-    const code = (specialityCode || 'GENERAL PHYSICIAN').trim();
-    const args = `consultation_type:${consultationType},speciality_code:${code},serviceType_code:op_consultation,doctor_mode:yes`;
+    const mode = (consultationType || 'video').toLowerCase();
+    const facId = facilityId || '4c5baa60-db39-11f0-b303-8ae465e2df26-45';
+    const baseSpec = (baseSpecialityCode || 'GENERAL PHYSICIAN').trim();
+    const filterCode = (specialityFilterCode || 'general physician').trim();
+
+    const args = `facility_id:${facId},serviceItemCode:${mode},speciality_code:${baseSpec},practice_type_code:individual,consultation_type:${mode},serviceType_code:op_consultation`;
+    const filter = `specialityCode:${encodeURIComponent(filterCode)}`;
     const searchParam = search ? encodeURIComponent(search.trim()) : '';
-    const url = `${this.baseUrl}?queryId=TELE_DOCTOR_LISTING&args=${encodeURIComponent(args)}&page_size=${pageSize}&page_no=${pageNo}&query_id=TELE_DOCTOR_LISTING&filter=&search=${searchParam}&search_columns=display_name&application=habit-opd`;
+    const paging = pageSize ? `&page_size=${pageSize}&page_no=${pageNo}` : '';
+    const searchPart = searchParam ? `&search=${searchParam}&search_columns=display_name` : '';
+
+    const url = `${this.baseUrl}?queryId=TELE_DOCTOR_LISTING&args=${encodeURIComponent(args)}&filter=${filter}${paging}${searchPart}&application=habit-opd`;
 
     return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
@@ -392,10 +402,13 @@ export class OpdConsultationService {
         }),
         map((items: any[]) => items.map((item: any): Doctor => {
           const d = item.data || item;
-          const videoPrice = d.price_details?.find((p: any) => p.consultation_type === 'video');
-          const videoFee = videoPrice?.selling_amount ?? videoPrice?.mrp ?? d.fee ?? 0;
-          const mrp = videoPrice?.mrp ?? videoFee;
-          const sellingDiscountRate = videoPrice?.selling_discount_rate ?? 0;
+          const modeKey = mode === 'audio' ? 'audio' : 'video';
+          const priceObj = d.price_details?.find((p: any) => p.consultation_type === modeKey)
+            || d.price_details?.find((p: any) => p.consultation_type === 'video')
+            || d.price_details?.[0];
+          const fee = priceObj?.selling_amount ?? priceObj?.mrp ?? d.fee ?? 0;
+          const mrp = priceObj?.mrp ?? fee;
+          const sellingDiscountRate = priceObj?.selling_discount_rate ?? 0;
           const nextSlotVideo = d.next_slot_date_video ? Number(d.next_slot_date_video) : (d.slot_start_time ? Number(d.slot_start_time) : null);
           let nextInLabel = 'Not available';
           let canConsultNow = false;
@@ -436,9 +449,9 @@ export class OpdConsultationService {
             name: d.display_name || d.doctor_name || d.name || '',
             qualification: qualText,
             experience: parseInt(d.doctor_experience || d.experience) || 0,
-            fee: videoFee,
+            fee,
             mrp,
-            selling_amount: videoFee,
+            selling_amount: fee,
             selling_discount_rate: sellingDiscountRate,
             rating: d.rating || 0,
             gender: d.gender_name || d.gender,
@@ -446,10 +459,10 @@ export class OpdConsultationService {
             nextIn: nextInLabel,
             next_slot_date_video: nextSlotVideo || undefined,
             canConsultNow,
-            speciality: d.speciality || d.speciality_name || d.specialityCode || code,
+            speciality: d.speciality || d.speciality_name || d.specialityCode || filterCode || baseSpec,
             speciality_id: d.speciality_id || '',
-            speciality_code: d.speciality_code || d.specialityCode || code,
-            facility_id: d.facility_id || '',
+            speciality_code: d.speciality_code || d.specialityCode || filterCode || baseSpec,
+            facility_id: d.facility_id || facId,
             facility_name: d.facility_name || d.extra_data?.facility_name || '',
             facility_address: d.facility_address || d.address,
             department_id: d.department_id || '',
