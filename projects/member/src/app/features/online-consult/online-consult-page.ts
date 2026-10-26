@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, effect, OnInit } from '@angular/core';
+​import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, effect, OnInit } from '@angular/core';
 import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse, CartSnapshot, CheckoutSnapshot } from '../../services/opd-consultation.service';
 import moment from 'moment';
 import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
@@ -1137,7 +1137,7 @@ export class OnlineConsultPage implements OnInit {
         slot: s ? this.formatSlotRange(s) : '',
         slot_type: 'dynamic',
         mode_of_appointment: 'opd_network',
-        consultation_type_code: this.mode() || 'video',
+        consultation_type_code: (this.mode() || '').toLowerCase() === 'audio' ? 'Audio' : 'Video',
         tag_data: []
       }
     };
@@ -1178,7 +1178,7 @@ export class OnlineConsultPage implements OnInit {
           part_of_package: false,
           serviceItemCode: doc?.doctor_code || doc?.id || '',
           consultation_type: 'Tele Consult',
-          consultation_type_code: this.mode() || 'video',
+          consultation_type_code: (this.mode() || '').toLowerCase() === 'audio' ? 'Audio' : 'Video',
           over_booking_status: false,
           order_date_time: now,
           speciality_name: doc?.speciality || '',
@@ -1262,7 +1262,7 @@ export class OnlineConsultPage implements OnInit {
 
     const rawPayerInfo = checkoutItem?.payer_info || checkoutItem?.payer_details;
     const payerInfo = {
-      id: rawPayerInfo?.id || 'd8dc4321-cfb5-11f1-9ac9-a65189794b1f-131445744',
+      id: rawPayerInfo?.id || '79bc4d83-d079-11f1-88bc-8ee28ecd112a-54',
       payer_type: rawPayerInfo?.payer_type || 'cash',
       payer_name: rawPayerInfo?.payer_name || 'Cash',
       payer_id: rawPayerInfo?.payer_id || '833efe10-694b-11ec-b3fb-de281cb5e8f4-27',
@@ -1270,38 +1270,67 @@ export class OnlineConsultPage implements OnInit {
       tariff_id: rawPayerInfo?.tariff_id || '30a43e20-6326-11ec-a778-1a3a2074e682-86'
     };
 
-    const facilityAddress = checkoutItem?.facility_address || doc?.facility_address || null;
+    const facilityAddress = checkoutItem?.facility_address || doc?.facility_address || {
+      street1: 'DZREozj84vsuM/2Xh+RWga0HnFWg7LzoR3b4XN3qLhtdQ+0AfUBkGk+bNW4XTJ8C',
+      street2: 'cF1TKmuytkRtTrnx0SVrJw==',
+      street3: '',
+      city: 'gautam buddha nagar',
+      state: 'uttar pradesh',
+      pincode: '201301',
+      country: 'india',
+      latitude: 28.5902174,
+      longitude: 77.345956,
+      cityDisplayName: 'Gautam Buddha Nagar',
+      stateDisplayName: 'Uttar Pradesh',
+      pincodeDisplayName: '',
+      countryDisplayName: 'India'
+    };
+
+    const consultTypeCode = (this.mode() || '').toLowerCase() === 'audio' ? 'Audio' : 'Video';
+
+    const sourceServices = (checkoutItem?.op_services && checkoutItem.op_services.length > 0)
+      ? checkoutItem.op_services
+      : ((checkoutItem?.op_failed_items && checkoutItem.op_failed_items.length > 0)
+        ? checkoutItem.op_failed_items
+        : []);
 
     let bookingServices: any[] = [];
-    if (checkoutItem?.op_services && checkoutItem.op_services.length > 0) {
-      bookingServices = checkoutItem.op_services.map((svc: any) => ({
+    if (sourceServices.length > 0) {
+      bookingServices = sourceServices.map((svc: any) => ({
         id: svc?.id || doc?.id || '',
         serviceItemId: svc?.serviceItemId || doc?.id || '',
         serviceItemCode: svc?.serviceItemCode || doc?.doctor_code || doc?.id || '',
         serviceItemName: svc?.serviceItemName || doc?.name || '',
         serviceType_code: svc?.serviceType_code || 'op_consultation',
         serviceType: svc?.serviceType || 'OP Consultation',
-        department_id: svc?.department_id || doc?.department_id || '',
-        department_name: svc?.department_name || doc?.department_name || '',
-        subDepartment_id: svc?.subDepartment_id || doc?.subDepartment_id || '',
-        subDepartment_name: svc?.subDepartment_name || doc?.subDepartment_name || '',
+        department_id: svc?.department_id || doc?.department_id || 'fd9249f0-6302-11ec-8c2d-6ef3f61dec40-81',
+        department_name: svc?.department_name || doc?.department_name || 'General Physician',
+        subDepartment_id: svc?.subDepartment_id || doc?.subDepartment_id || 'a6aa1681-64ac-11ec-a778-1a3a2074e682-64',
+        subDepartment_name: svc?.subDepartment_name || doc?.subDepartment_name || 'General Physician',
         priority: svc?.priority || 'Routine',
         priorityCode: svc?.priorityCode || 'routine',
-        speciality_code: (svc?.speciality_code || doc?.speciality_code || doc?.speciality || '').toUpperCase(),
-        speciality_id: svc?.speciality_id || doc?.speciality_id || '',
-        speciality_name: svc?.speciality_name || doc?.speciality || '',
-        category: (svc?.category || doc?.speciality || '').toUpperCase(),
+        speciality_code: (svc?.speciality_code || doc?.speciality_code || doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+        speciality_id: svc?.speciality_id || doc?.speciality_id || '72cdfed0-6c7c-11ec-97ad-6ea2ac7af13a-81',
+        speciality_name: svc?.speciality_name || doc?.speciality || 'General Physician',
+        category: (svc?.category || doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
         qty: svc?.qty ?? 1,
         appointment_time: String(svc?.appointment_time || sEnd || 0),
-        unit_price: svc?.unit_price ?? 0,
-        bill_amount: svc?.bill_amount ?? 0,
-        discount: svc?.discount ?? 0,
-        net_amount: svc?.net_amount ?? 0,
-        patient_amount: svc?.patient_amount ?? 0,
-        payer_amount: svc?.payer_amount ?? 0,
-        tax: svc?.tax ?? 0,
+        // unit_price: svc?.unit_price ?? 0,
+        unit_price: 100, // TODO: Revert hardcoded test value later
+        // bill_amount: svc?.bill_amount ?? 0,
+        bill_amount: 100, // TODO: Revert hardcoded test value later
+        // discount: svc?.discount ?? 0,
+        discount: 0, // TODO: Revert hardcoded test value later
+        // net_amount: svc?.net_amount ?? 0,
+        net_amount: 100, // TODO: Revert hardcoded test value later
+        // patient_amount: svc?.patient_amount ?? 0,
+        patient_amount: 0, // TODO: Revert hardcoded test value later
+        // payer_amount: svc?.payer_amount ?? 0,
+        payer_amount: 0, // TODO: Revert hardcoded test value later
+        // tax: svc?.tax ?? 0,
+        tax: 0, // TODO: Revert hardcoded test value later
         consultation_type: svc?.consultation_type || 'Tele Consult',
-        consultation_type_code: svc?.consultation_type_code || (this.mode() === 'audio' ? 'Audio' : 'Video'),
+        consultation_type_code: consultTypeCode,
         cart_id: svc?.cart_id || cartId || '',
         failed_items_message: '',
         is_failed_items: false,
@@ -1326,25 +1355,28 @@ export class OnlineConsultPage implements OnInit {
         patient_instructions: '',
         logo_id: '',
         doctor_profile_path: svc?.doctor_profile_path || doc?.profile_path || '',
-        cug_amount: svc?.cug_amount ?? 0,
-        slotNo: Number(svc?.slotNo || s?.slotNo || 0),
-        service_mrp: svc?.service_mrp ?? 0,
-        service_selling_amount: svc?.service_selling_amount ?? 0,
+        // cug_amount: svc?.cug_amount ?? 0,
+        cug_amount: 0, // TODO: Revert hardcoded test value later
+        slotNo: Number(svc?.slotNo || s?.slotNo || 3),
+        // service_mrp: svc?.service_mrp ?? 0,
+        service_mrp: 100, // TODO: Revert hardcoded test value later
+        // service_selling_amount: svc?.service_selling_amount ?? 0,
+        service_selling_amount: 100, // TODO: Revert hardcoded test value later
         care_coin_discount: 0,
         care_coin_discount_amount: 0,
         used_wallet_amount: 0,
         earn_care_coins: 0,
         service_code: svc?.service_code || doc?.doctor_code || '',
-        doctor_experience: String(svc?.doctor_experience || (doc?.experience != null ? doc.experience : '')),
+        doctor_experience: String(svc?.doctor_experience || (doc?.experience != null ? doc.experience : '0')),
         is_home_collection: false,
         doctor_telecom: svc?.doctor_telecom || doc?.telecom || '',
         is_centre_visit: false,
         part_of_package: false,
         extra_data: svc?.extra_data || {
           edit_price: false,
-          speciality_name: doc?.speciality || '',
-          facility_name: doc?.facility_name || '',
-          qualification: doc?.qualification || ''
+          speciality_name: doc?.speciality || 'General Physician',
+          facility_name: doc?.facility_name || 'HCL Healthcare',
+          qualification: doc?.qualification || 'MBBS'
         },
         floor_name: svc?.floor_name || '',
         room_name: svc?.room_name || ''
@@ -1358,33 +1390,40 @@ export class OnlineConsultPage implements OnInit {
           serviceItemName: doc?.name || '',
           serviceType_code: 'op_consultation',
           serviceType: 'OP Consultation',
-          department_id: doc?.department_id || '',
-          department_name: doc?.department_name || '',
-          subDepartment_id: doc?.subDepartment_id || '',
-          subDepartment_name: doc?.subDepartment_name || '',
+          department_id: doc?.department_id || 'fd9249f0-6302-11ec-8c2d-6ef3f61dec40-81',
+          department_name: doc?.department_name || 'General Physician',
+          subDepartment_id: doc?.subDepartment_id || 'a6aa1681-64ac-11ec-a778-1a3a2074e682-64',
+          subDepartment_name: doc?.subDepartment_name || 'General Physician',
           priority: 'Routine',
           priorityCode: 'routine',
-          speciality_code: (doc?.speciality_code || doc?.speciality || '').toUpperCase(),
-          speciality_id: doc?.speciality_id || '',
-          speciality_name: doc?.speciality || '',
-          category: (doc?.speciality || '').toUpperCase(),
+          speciality_code: (doc?.speciality_code || doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+          speciality_id: doc?.speciality_id || '72cdfed0-6c7c-11ec-97ad-6ea2ac7af13a-81',
+          speciality_name: doc?.speciality || 'General Physician',
+          category: (doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
           qty: 1,
-          appointment_time: String(sEnd || 0),
-          unit_price: 0,
-          bill_amount: 0,
-          discount: 0,
-          net_amount: 0,
-          patient_amount: 0,
-          payer_amount: 0,
-          tax: 0,
+          appointment_time: String(sEnd || sStart || now),
+          // unit_price: 0,
+          unit_price: 100, // TODO: Revert hardcoded test value later
+          // bill_amount: 0,
+          bill_amount: 100, // TODO: Revert hardcoded test value later
+          // discount: 0,
+          discount: 0, // TODO: Revert hardcoded test value later
+          // net_amount: 0,
+          net_amount: 100, // TODO: Revert hardcoded test value later
+          // patient_amount: 0,
+          patient_amount: 0, // TODO: Revert hardcoded test value later
+          // payer_amount: 0,
+          payer_amount: 0, // TODO: Revert hardcoded test value later
+          // tax: 0,
+          tax: 0, // TODO: Revert hardcoded test value later
           consultation_type: 'Tele Consult',
-          consultation_type_code: this.mode() === 'audio' ? 'Audio' : 'Video',
+          consultation_type_code: consultTypeCode,
           cart_id: cartId || '',
           failed_items_message: '',
           is_failed_items: false,
-          serviceDate: String(sDate || 0),
-          serviceStartTime: Number(sStart || 0),
-          serviceEndTime: Number(sEnd || 0),
+          serviceDate: String(sDate || now),
+          serviceStartTime: Number(sStart || now),
+          serviceEndTime: Number(sEnd || now),
           participant: doc ? [
             {
               participantId: doc.id || '',
@@ -1403,25 +1442,28 @@ export class OnlineConsultPage implements OnInit {
           patient_instructions: '',
           logo_id: '',
           doctor_profile_path: doc?.profile_path || '',
-          cug_amount: 0,
-          slotNo: Number(s?.slotNo || 0),
-          service_mrp: 0,
-          service_selling_amount: 0,
+          // cug_amount: 0,
+          cug_amount: 0, // TODO: Revert hardcoded test value later
+          slotNo: Number(s?.slotNo || 3),
+          // service_mrp: 0,
+          service_mrp: 100, // TODO: Revert hardcoded test value later
+          // service_selling_amount: 0,
+          service_selling_amount: 100, // TODO: Revert hardcoded test value later
           care_coin_discount: 0,
           care_coin_discount_amount: 0,
           used_wallet_amount: 0,
           earn_care_coins: 0,
           service_code: doc?.doctor_code || '',
-          doctor_experience: doc?.experience != null ? String(doc.experience) : '',
+          doctor_experience: doc?.experience != null ? String(doc.experience) : '0',
           is_home_collection: false,
           doctor_telecom: doc?.telecom || '',
           is_centre_visit: false,
           part_of_package: false,
           extra_data: {
             edit_price: false,
-            speciality_name: doc?.speciality || '',
-            facility_name: doc?.facility_name || '',
-            qualification: doc?.qualification || ''
+            speciality_name: doc?.speciality || 'General Physician',
+            facility_name: doc?.facility_name || 'HCL Healthcare',
+            qualification: doc?.qualification || 'MBBS'
           },
           floor_name: '',
           room_name: ''
@@ -1437,34 +1479,46 @@ export class OnlineConsultPage implements OnInit {
         payer_info: payerInfo
       },
       selectedPackageServiceItemIds: [],
-      facility_id: checkoutItem?.facility_id || doc?.facility_id || '',
+      facility_id: checkoutItem?.facility_id || doc?.facility_id || '7d3e4410-81c0-11ed-adc3-8256d01a1a51-14',
       scheme_code: checkoutItem?.scheme_code || '',
       is_use_wallet: checkoutItem?.is_use_wallet ?? false,
       bg_code: checkoutItem?.bg_code || this.policyStore.walletAccount()?.bg_code || '',
       scheme_discount_applicable: false,
-      cug_code: checkoutItem?.cug_code || doc?.cug_code || this.policyStore.version()?.cug_code || '',
+      cug_code: checkoutItem?.cug_code || doc?.cug_code || this.policyStore.version()?.cug_code || 'TC0001',
       doctor_id: doc?.id || '',
       type: '',
       tag_data: [],
-      bill_amount: checkoutItem?.bill_amount ?? 0,
-      net_amount: checkoutItem?.net_amount ?? 0,
-      final_payable: checkoutItem?.final_payable ?? 0,
-      service_mrp: checkoutItem?.service_mrp ?? 0,
-      service_selling_amount: checkoutItem?.service_selling_amount ?? 0,
+      // bill_amount: checkoutItem?.bill_amount ?? 0,
+      bill_amount: 100, // TODO: Revert hardcoded test value later
+      // net_amount: checkoutItem?.net_amount ?? 0,
+      net_amount: 100, // TODO: Revert hardcoded test value later
+      // final_payable: checkoutItem?.final_payable ?? 0,
+      final_payable: 0, // TODO: Revert hardcoded test value later
+      // service_mrp: checkoutItem?.service_mrp ?? 0,
+      service_mrp: 100, // TODO: Revert hardcoded test value later
+      // service_selling_amount: checkoutItem?.service_selling_amount ?? 0,
+      service_selling_amount: 100, // TODO: Revert hardcoded test value later
       home_collection_charges: 0,
-      discount: checkoutItem?.discount ?? 0,
+      // discount: checkoutItem?.discount ?? 0,
+      discount: 0, // TODO: Revert hardcoded test value later
       care_coin_discount: 0,
       care_coin_discount_amount: 0,
-      tax: checkoutItem?.tax ?? 0,
-      patient_amount: checkoutItem?.patient_amount ?? 0,
-      payer_amount: checkoutItem?.payer_amount ?? 0,
-      cug_amount: checkoutItem?.cug_amount ?? 0,
-      authorized_amount: checkoutItem?.authorized_amount ?? 0,
-      used_wallet_amount: checkoutItem?.used_wallet_amount ?? 0,
+      // tax: checkoutItem?.tax ?? 0,
+      tax: 0, // TODO: Revert hardcoded test value later
+      // patient_amount: checkoutItem?.patient_amount ?? 0,
+      patient_amount: 0, // TODO: Revert hardcoded test value later
+      // payer_amount: checkoutItem?.payer_amount ?? 0,
+      payer_amount: 0, // TODO: Revert hardcoded test value later
+      // cug_amount: checkoutItem?.cug_amount ?? 0,
+      cug_amount: 0, // TODO: Revert hardcoded test value later
+      // authorized_amount: checkoutItem?.authorized_amount ?? 0,
+      authorized_amount: 0, // TODO: Revert hardcoded test value later
+      // used_wallet_amount: checkoutItem?.used_wallet_amount ?? 0,
+      used_wallet_amount: 0, // TODO: Revert hardcoded test value later
       roundOff: 0,
       earn_care_coins: 0,
       is_use_care_coin: false,
-      billing_category_id: checkoutItem?.billing_category_id || '',
+      billing_category_id: checkoutItem?.billing_category_id || 'd03e69c1-63e3-11ec-a778-1a3a2074e682-37',
       billing_category_name: checkoutItem?.billing_category_name || 'OP',
       payment_details: [],
       payment_type: 'E-Payment',
@@ -1489,34 +1543,82 @@ export class OnlineConsultPage implements OnInit {
     };
 
     // Construct or extract checkout_snapshot with opdCheckout
-    const opdCheckout = rawCheckoutSnapshot?.opdCheckout || {
-      patient_id: checkoutItem?.patient_id || patId,
-      uhId: checkoutItem?.uhId || uhId,
-      bill_amount: checkoutItem?.bill_amount ?? 0,
-      net_amount: checkoutItem?.net_amount ?? 0,
-      final_payable: checkoutItem?.final_payable ?? 0,
-      patient_amount: checkoutItem?.patient_amount ?? 0,
-      payer_amount: checkoutItem?.payer_amount ?? 0,
-      service_mrp: checkoutItem?.service_mrp ?? 0,
-      service_selling_amount: checkoutItem?.service_selling_amount ?? 0,
-      op_services: (checkoutItem?.op_services || bookingServices).map((s: any) => ({
-        serviceItemId: s.serviceItemId || doc?.id || '',
-        serviceItemCode: s.serviceItemCode || doc?.doctor_code || '',
-        serviceItemName: s.serviceItemName || doc?.name || '',
-        consultation_type: s.consultation_type || 'Tele Consult',
-        consultation_type_code: s.consultation_type_code || (this.mode() === 'audio' ? 'Audio' : 'Video'),
-        patient_amount: s.patient_amount ?? checkoutItem?.patient_amount ?? 0,
-        payer_amount: s.payer_amount ?? checkoutItem?.payer_amount ?? 0,
-        unit_price: s.unit_price ?? checkoutItem?.final_payable ?? 0
-      }))
+    const rawOpdCheckout = rawCheckoutSnapshot?.opdCheckout || checkoutItem;
+    const opdCheckout = {
+      id: rawOpdCheckout?.id || '',
+      cug_code: rawOpdCheckout?.cug_code || doc?.cug_code || 'TC0001',
+      facility_id: rawOpdCheckout?.facility_id || doc?.facility_id || '7d3e4410-81c0-11ed-adc3-8256d01a1a51-14',
+      uhId: rawOpdCheckout?.uhId || uhId,
+      provider_code: rawOpdCheckout?.provider_code || doc?.provider_code || 'HCLHC001',
+      provider_name: rawOpdCheckout?.provider_name || doc?.provider_name || 'HCL Healthcare',
+      bg_code: rawOpdCheckout?.bg_code || '',
+      billing_category_id: rawOpdCheckout?.billing_category_id || 'd03e69c1-63e3-11ec-a778-1a3a2074e682-37',
+      billing_category_name: rawOpdCheckout?.billing_category_name || 'OP',
+      scheme_code: rawOpdCheckout?.scheme_code || '',
+      scheme_discount_applicable: false,
+      patient_id: rawOpdCheckout?.patient_id || patId,
+      failed_items: rawOpdCheckout?.failed_items || [],
+      op_services: rawOpdCheckout?.op_services || [],
+      op_failed_items: rawOpdCheckout?.op_failed_items || [],
+      failed_items_message: rawOpdCheckout?.failed_items_message || '',
+      is_failed_items: rawOpdCheckout?.is_failed_items ?? false,
+      payer_details: rawOpdCheckout?.payer_details || payerInfo,
+      type: rawOpdCheckout?.type || '',
+      // final_payable: rawOpdCheckout?.final_payable ?? 0,
+      final_payable: 0, // TODO: Revert hardcoded test value later
+      // paid_amount: rawOpdCheckout?.paid_amount ?? 0,
+      paid_amount: 0, // TODO: Revert hardcoded test value later
+      is_previous_paid: false,
+      previous_paid_details: {},
+      excluded_amount: 0,
+      orderedFrom: rawOpdCheckout?.orderedFrom || 'Patient Portal',
+      // service_mrp: rawOpdCheckout?.service_mrp ?? 0,
+      service_mrp: 0, // TODO: Revert hardcoded test value later
+      // service_selling_amount: rawOpdCheckout?.service_selling_amount ?? 0,
+      service_selling_amount: 0, // TODO: Revert hardcoded test value later
+      isNonPayerPaybleItem: false,
+      // discount: rawOpdCheckout?.discount ?? 0,
+      discount: 0, // TODO: Revert hardcoded test value later
+      care_coin_discount: 0,
+      care_coin_discount_amount: 0,
+      // tax: rawOpdCheckout?.tax ?? 0,
+      tax: 0, // TODO: Revert hardcoded test value later
+      // bill_amount: rawOpdCheckout?.bill_amount ?? 0,
+      bill_amount: 100.0, // TODO: Revert hardcoded test value later
+      // net_amount: rawOpdCheckout?.net_amount ?? 0,
+      net_amount: 100.0, // TODO: Revert hardcoded test value later
+      // patient_amount: rawOpdCheckout?.patient_amount ?? 0,
+      patient_amount: 0, // TODO: Revert hardcoded test value later
+      // payer_amount: rawOpdCheckout?.payer_amount ?? 0,
+      payer_amount: 0, // TODO: Revert hardcoded test value later
+      // cug_amount: rawOpdCheckout?.cug_amount ?? 0,
+      cug_amount: 0, // TODO: Revert hardcoded test value later
+      // authorized_amount: rawOpdCheckout?.authorized_amount ?? 0,
+      authorized_amount: 0, // TODO: Revert hardcoded test value later
+      // used_wallet_amount: rawOpdCheckout?.used_wallet_amount ?? 0,
+      used_wallet_amount: 0, // TODO: Revert hardcoded test value later
+      roundOff: 0,
+      earn_care_coins: 0,
+      is_use_wallet: false,
+      is_use_care_coin: false,
+      old_serviceRequestId: '',
+      facility_address: facilityAddress,
+      is_family_member: rawOpdCheckout?.is_family_member ?? false,
+      patient_details: rawOpdCheckout?.patient_details || {
+        id: patId,
+        uhId: uhId,
+        cug_code: rawOpdCheckout?.cug_code || 'TC0001'
+      },
+      mode_of_appointment: 'opd_network',
+      tag_data: []
     };
 
     return {
       booking_snapshot: {
-        serviceRequestHandler: serviceRequestHandler,
-        checkout_snapshot: {
-          opdCheckout: opdCheckout
-        }
+        serviceRequestHandler: serviceRequestHandler
+      },
+      checkout_snapshot: {
+        opdCheckout: opdCheckout
       }
     };
   }
