@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 
 import { AppError, appError } from '../http/app-error';
 import { Member } from '../member/member.model';
@@ -8,6 +8,7 @@ import { FamilyMemberResource, Relationship, toFamilyMember } from '../member/fa
 import { isRelationshipCoveredInPolicy } from '../member/policy.mapper';
 import { AppService } from '../http/api.service';
 import { SessionStore } from '../session/session.store';
+import { UserInfoStore } from '../session/userinfo.store';
 
 const ACTIVE_MEMBER_KEY = 'opd.activeMemberId';
 
@@ -15,7 +16,7 @@ const ACTIVE_MEMBER_KEY = 'opd.activeMemberId';
  * Family + which member the portal is acting for, loaded from
  * `user_relationship_mapping` (GET_FAMILY_LIST) live API.
  *
- * Dynamically resolves `user_id` from GET_FAMILY_LIST to load policy assignments
+ * Dynamically resolves `mapped_id` from GET_FAMILY_LIST to load policy assignments
  * via PolicyStore, and generates policy cards filtered by allowed relationships
  * defined in the active opd_policy_version.
  */
@@ -26,6 +27,7 @@ export class FamilyStore {
 
   private readonly appService = inject(AppService);
   private readonly session = inject(SessionStore);
+  private readonly userStore = inject(UserInfoStore);
   private readonly policyStore = inject(PolicyStore);
 
   readonly rawFamily = this._family.asReadonly();
@@ -133,8 +135,19 @@ export class FamilyStore {
       const relCode = active?.relationshipCode || (active?.isPrimary ? 'self' : 'self');
       this.policyStore.setActiveRelationship(relCode);
 
-      const primary = this.family().find((m) => m.isPrimary);
-      void this.policyStore.syncMemberWalletContext(active?.uhid ?? null, primary?.uhid ?? null);
+      const primary = this._family().find((m) => m.isPrimary);
+      // Fallback: If GET_FAMILY_LIST omitted uhId for the primary member, retrieve it from GET_MY_CONFIG via UserInfoStore
+      const configUhId = this.userStore.getUhid();
+      const primaryUhId = primary?.uhid || configUhId;
+      const activeUhId = active?.uhid || (active?.isPrimary ? primaryUhId : null);
+      void this.policyStore.syncMemberWalletContext(activeUhId, primaryUhId);
+
+      const targetPatientId = active?.memberId;
+      if (targetPatientId) {
+        untracked(() => {
+          void this.policyStore.load(targetPatientId);
+        });
+      }
     });
     void this.load();
   }
@@ -172,14 +185,20 @@ export class FamilyStore {
   }
 
   private applyFamilyResources(resources: FamilyMemberResource[]): void {
-    // Dynamic user_id from the live GET_FAMILY_LIST response
+    // Dynamic patient_id from the live GET_FAMILY_LIST response mapped_id field
     const primaryResource = resources.find(
-      (r) => !r.relationship_code || r.relationship_code.toLowerCase() === 'self' || r.mapped_id === r.user_id,
+      (r) =>
+        !r.relationship_code ||
+        r.relationship_code.toLowerCase() === 'self' ||
+        r.relationship_code.toUpperCase() === 'REL001' ||
+        r.mapped_id === r.user_id,
     ) ?? resources[0];
-    const dynamicUserId = primaryResource?.user_id ?? primaryResource?.mapped_id;
+    const dynamicPatientId = primaryResource?.mapped_id || primaryResource?.user_id;
 
-    if (dynamicUserId) {
-      const familyMembers = resources.map((r) => toFamilyMember(r, dynamicUserId));
+    if (dynamicPatientId) {
+      // Injects the canonical UHID from GET_MY_CONFIG for Self when GET_FAMILY_LIST omits it
+      const configUhId = this.userStore.getUhid();
+      const familyMembers = resources.map((r) => toFamilyMember(r, dynamicPatientId, configUhId));
       familyMembers.sort((a, b) => {
         const aIsSelf = a.isPrimary || a.relationship === Relationship.Self || a.relationshipCode === 'self';
         const bIsSelf = b.isPrimary || b.relationship === Relationship.Self || b.relationshipCode === 'self';
@@ -194,8 +213,10 @@ export class FamilyStore {
         this.session.setMember(primaryMember);
       }
 
-      // Trigger live policy resolution with the dynamic patient ID
-      void this.policyStore.load(dynamicUserId);
+      const active = this.activeMember();
+      const targetPatientId = active?.memberId || dynamicPatientId;
+      // Trigger live policy resolution with the dynamic patient ID from mapped_id
+      void this.policyStore.load(targetPatientId);
     }
   }
 

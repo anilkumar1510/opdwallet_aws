@@ -59,14 +59,34 @@ import { EmptyView } from '../../shared/ui/state-views';
             @for (transaction of store.transactions(); track transaction.id) {
               <li class="flex items-start gap-3 px-4 py-3">
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-medium text-ink-900">
-                    {{ transaction.description }}
+                  <div class="flex items-center gap-2">
+                    @if (transaction.transactionType; as tType) {
+                      <span
+                        class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-semibold"
+                        [class.bg-purple-50]="tType === 'Claim'"
+                        [class.text-purple-700]="tType === 'Claim'"
+                        [class.border-purple-200]="tType === 'Claim'"
+                        [class.bg-blue-50]="tType === 'Cashless'"
+                        [class.text-blue-700]="tType === 'Cashless'"
+                        [class.border-blue-200]="tType === 'Cashless'"
+                        [class.bg-emerald-50]="tType === 'Recharge'"
+                        [class.text-emerald-700]="tType === 'Recharge'"
+                        [class.border-emerald-200]="tType === 'Recharge'"
+                      >
+                        {{ tType }}
+                      </span>
+                    }
+                    @if (transaction.reference; as ref) {
+                      <span class="font-mono text-xs font-medium text-ink-500 truncate max-w-[200px]" [title]="ref">
+                        ID: {{ ref }}
+                      </span>
+                    }
+                  </div>
+                  <p class="mt-1 truncate text-sm font-medium text-ink-900">
+                    {{ transaction.categoryLabel || transaction.description }}
                   </p>
                   <p class="mt-0.5 text-xs text-ink-500">
                     {{ occurredAt(transaction) }}
-                    @if (transaction.categoryLabel; as label) {
-                      · {{ label }}
-                    }
                   </p>
                   @if (transaction.isReversed) {
                     <span
@@ -77,15 +97,12 @@ import { EmptyView } from '../../shared/ui/state-views';
                 </div>
                 <span
                   class="shrink-0 text-sm font-semibold"
-                  [class.text-success-700]="isCredit(transaction)"
-                  [class.text-ink-900]="!isCredit(transaction)"
+                  [class.text-emerald-600]="isCredit(transaction) && !transaction.isReversed"
+                  [class.text-red-600]="!isCredit(transaction) && !transaction.isReversed"
+                  [class.text-ink-400]="transaction.isReversed"
                   [class.line-through]="transaction.isReversed"
                 >
                   {{ isCredit(transaction) ? '+' : '−' }}{{ amount(transaction.amount) }}
-                  <!-- The balance AFTER this transaction. Three identical
-                       ₹300 debits on one day are otherwise impossible to tell
-                       apart or reconcile against the total. The API sends it
-                       as newBalance.total; it was simply never mapped. -->
                   @if (transaction.balanceAfter; as balance) {
                     <span class="mt-0.5 block text-xs font-normal text-ink-500">
                       Bal: {{ amount(balance) }}
@@ -131,4 +148,11 @@ export class WalletLedger {
   }
 }
 
-const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const DATE = new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+});

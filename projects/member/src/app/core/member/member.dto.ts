@@ -25,6 +25,8 @@ export interface UserDto {
   /** Coded: REL001..REL010, or a legacy spelled value such as SELF. */
   relationship?: string;
   uhid?: string;
+  employeeId?: string;
+  employee_id?: string;
   dob?: string;
   dateOfBirth?: string;
   gender?: string;

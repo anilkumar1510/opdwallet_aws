@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
 
+import { MOCK_WALLET_BALANCES, WalletBalances, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PolicyStore } from '../../core/member/policy.store';
+import { PaymentSplitView } from '../../shared/ui/payment-split';
+
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
@@ -44,12 +48,10 @@ const SLOT_TIMES = ['10:00 AM', '12:30 PM', '3:00 PM', '6:30 PM'];
 const PER_TXN_LIMIT = 400;
 const COPAY_PCT = 20;
 
-function breakdown(value: number) {
-  const covered = Math.min(value, PER_TXN_LIMIT);
-  const copay = Math.round((covered * COPAY_PCT) / 100);
-  const walletBlock = covered - copay;
-  const excess = Math.max(0, value - PER_TXN_LIMIT);
-  return { value, covered, copay, walletBlock, excess, selfPay: copay + excess };
+/** Co-payment first, then the per-transaction limit, then the category/pool and total wallet balances. */
+function breakdown(value: number, balances: WalletBalances) {
+  const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT, balances);
+  return { value, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
 }
 
 type Step =
@@ -59,7 +61,7 @@ type Step =
 @Component({
   selector: 'opd-dental-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption, CoverageBannerComponent],
+  imports: [ClaimOption, CoverageBannerComponent, PaymentSplitView],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -124,14 +126,7 @@ type Step =
               @case ('cart') {
                 <p class="mb-2 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Confirmed — your cart is ready.</p>
                 <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
-                <dl class="space-y-2 text-sm">
-                  <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ consultPay().value }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ consultPay().covered }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ consultPay().copay }}</dd></div>
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-success-700">₹{{ consultPay().walletBlock }}</dd></div>
-                  @if (consultPay().excess > 0) { <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ consultPay().excess }}</dd></div> }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ consultPay().selfPay }}</dd></div>
-                </dl>
+                <opd-payment-split [split]="consultPay().split" billLabel="Consultation fee" />
               }
               @case ('receipt') {
                 <div class="text-center"><p class="text-3xl">🧾</p><p class="mt-2 text-base font-bold text-[#034DA2]">Payment received</p></div>
@@ -191,14 +186,7 @@ type Step =
               }
               @case ('procPayment') {
                 <p class="mb-3 text-sm font-medium text-ink-700">Procedure payment breakdown</p>
-                <dl class="space-y-2 text-sm">
-                  <div class="flex justify-between"><dt class="text-ink-700">Procedure value</dt><dd class="font-medium text-ink-900">₹{{ procPay().value }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ procPay().covered }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ procPay().copay }}</dd></div>
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-success-700">₹{{ procPay().walletBlock }}</dd></div>
-                  @if (procPay().excess > 0) { <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ procPay().excess }}</dd></div> }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ procPay().selfPay }}</dd></div>
-                </dl>
+                <opd-payment-split [split]="procPay().split" billLabel="Procedure value" />
               }
               @case ('procConfirm') {
                 <div class="text-center"><p class="text-3xl">🧾</p><p class="mt-2 text-base font-bold text-[#034DA2]">Payment received</p><p class="mt-1 text-sm text-ink-700">Procedure appointment is pending confirmation — it isn't auto-confirmed.</p></div>
@@ -229,6 +217,11 @@ type Step =
 })
 export class DentalPage {
   protected readonly claimModes = inject(ClaimModeStore);
+  /**
+   * Balances a payment here is capped at — the category/pool, then the total
+   * wallet. STATIC for now; the live pool balance is PolicyStore.poolBalanceFor.
+   */
+  protected readonly walletBalances = computed<WalletBalances>(() => MOCK_WALLET_BALANCES);
   protected readonly BenefitCategory = BenefitCategory;
   protected readonly dentists = DENTISTS;
   protected readonly patients = PATIENTS;
@@ -267,8 +260,8 @@ export class DentalPage {
   });
   protected readonly currentStep = computed<Step>(() => this.steps()[this.step()] ?? 'compare');
 
-  protected readonly consultPay = computed(() => breakdown(this.dentist()?.fee ?? 0));
-  protected readonly procPay = computed(() => breakdown(this.estimate() || 0));
+  protected readonly consultPay = computed(() => breakdown(this.dentist()?.fee ?? 0, this.walletBalances()));
+  protected readonly procPay = computed(() => breakdown(this.estimate() || 0, this.walletBalances()));
 
   protected primaryLabel(): string {
     switch (this.currentStep()) {
