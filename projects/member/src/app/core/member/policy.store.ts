@@ -13,6 +13,9 @@ import {
   OpdWalletAccountDto,
   PolicyBenefitPoolDto,
 } from './policy.dto';
+import { WalletPassbookItemDto } from '../wallet/wallet-passbook.dto';
+import { EnrichedWalletPassbookItem } from '../wallet/wallet-passbook.model';
+import { mapPassbookToEnriched } from '../wallet/wallet-passbook.mapper';
 import {
   findRelationshipInVersion,
   getPrimaryRelationship,
@@ -57,6 +60,10 @@ export class PolicyStore {
   private readonly _activeUhId = signal<string | null>(null);
   private readonly _primaryUhId = signal<string | null>(null);
 
+  private readonly _passbook = signal<readonly WalletPassbookItemDto[]>([]);
+  private readonly _passbookLoading = signal<boolean>(false);
+  private readonly _passbookError = signal<string | null>(null);
+
   private loadedId: string | null = null;
   private lastPatientId: string | null = null;
   private loadedPatientId: string | null = null;
@@ -70,6 +77,13 @@ export class PolicyStore {
   readonly error = this._error.asReadonly();
   readonly activeRelationshipCode = this._activeRelationshipCode.asReadonly();
   readonly walletAccount = this._walletAccount.asReadonly();
+  readonly passbook = this._passbook.asReadonly();
+  readonly passbookLoading = this._passbookLoading.asReadonly();
+  readonly passbookError = this._passbookError.asReadonly();
+
+  readonly enrichedPassbook = computed<readonly EnrichedWalletPassbookItem[]>(() =>
+    mapPassbookToEnriched(this._passbook(), this._consumptionCycles()),
+  );
 
   readonly isCovered = computed(() =>
     isRelationshipCoveredInPolicy(this._activeRelationshipCode(), this._version()),
@@ -358,6 +372,7 @@ export class PolicyStore {
         if (account) {
           this._walletCache.set(targetUhId, account);
           this._walletAccount.set(account);
+          this.fetchWalletPassbook(targetUhId);
           return;
         }
       }
@@ -366,6 +381,39 @@ export class PolicyStore {
       console.error('Error fetching wallet account:', e);
       this._walletAccount.set(null);
     }
+  }
+
+  fetchWalletPassbook(uhId?: string | null): void {
+    const version = this._version();
+    const isFloater = (version?.allocation_type || '').trim().toUpperCase() === 'FLOATER';
+    const activeMemberUhId = this._activeUhId();
+    const primaryMemberUhId = this._primaryUhId();
+    const walletAccountUserCode = this.walletAccount()?.user_code;
+
+    const targetUhId = uhId?.trim()
+      || (isFloater ? (primaryMemberUhId || activeMemberUhId) : (activeMemberUhId || primaryMemberUhId))
+      || walletAccountUserCode
+      || 'HH-448725';
+
+    this._passbookLoading.set(true);
+    this._passbookError.set(null);
+    const queryArgs = `queryId=GET_WALLET_PASSBOOK&args=user_code%3A${encodeURIComponent(targetUhId)}`;
+    this.appService
+      .getcall('wallet_passbook', 'wallet', queryArgs)
+      .subscribe({
+        next: (res: any) => {
+          console.log('[WalletPassbook] Response for user_code ' + targetUhId + ':', res);
+          const parsed = typeof res === 'string' ? JSON.parse(res) : res;
+          const items = parsed?.resource || parsed?.data || (Array.isArray(parsed) ? parsed : []);
+          this._passbook.set(items);
+          this._passbookLoading.set(false);
+        },
+        error: (err: any) => {
+          console.error('[WalletPassbook] Error for user_code ' + targetUhId + ':', err);
+          this._passbookError.set(err?.message || 'Failed to load passbook');
+          this._passbookLoading.set(false);
+        },
+      });
   }
 
   /**
