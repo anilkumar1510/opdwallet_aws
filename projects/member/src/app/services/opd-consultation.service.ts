@@ -386,13 +386,12 @@ export class OpdConsultationService {
     const baseSpec = (baseSpecialityCode || 'GENERAL PHYSICIAN').trim();
     const filterCode = (specialityFilterCode || 'general physician').trim();
 
-    const args = `facility_id:${facId},serviceItemCode:${mode},speciality_code:${baseSpec},practice_type_code:individual,consultation_type:${mode},serviceType_code:op_consultation`;
     const filter = `specialityCode:${encodeURIComponent(filterCode)}`;
     const searchParam = search ? encodeURIComponent(search.trim()) : '';
     const paging = pageSize ? `&page_size=${pageSize}&page_no=${pageNo}` : '';
     const searchPart = searchParam ? `&search=${searchParam}&search_columns=display_name` : '';
 
-    const url = `${this.baseUrl}?queryId=TELE_DOCTOR_LISTING&args=${encodeURIComponent(args)}&filter=${filter}${paging}${searchPart}&application=habit-opd`;
+    const url = `${this.baseUrl}?queryId=TELE_DOCTOR_LISTING&filter=${filter}${paging}${searchPart}&application=habit-opd`;
 
     return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
