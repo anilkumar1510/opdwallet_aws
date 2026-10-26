@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
 
-import { MOCK_WALLET_BALANCE, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { MOCK_WALLET_BALANCES, WalletBalances, splitPayment, percentCopay } from '../../core/domain/payment-split';
 import { PolicyStore } from '../../core/member/policy.store';
 import { PaymentSplitView } from '../../shared/ui/payment-split';
 
@@ -48,9 +48,9 @@ const SLOT_TIMES = ['10:00 AM', '12:30 PM', '3:00 PM', '6:30 PM'];
 const PER_TXN_LIMIT = 400;
 const COPAY_PCT = 20;
 
-/** Co-payment first, then the per-transaction limit, then the wallet balance. */
-function breakdown(value: number, balance: number) {
-  const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT, balance);
+/** Co-payment first, then the per-transaction limit, then the category/pool and total wallet balances. */
+function breakdown(value: number, balances: WalletBalances) {
+  const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT, balances);
   return { value, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
 }
 
@@ -218,10 +218,10 @@ type Step =
 export class DentalPage {
   protected readonly claimModes = inject(ClaimModeStore);
   /**
-   * Wallet balance this benefit can draw on. Fixed mock for now; the live
-   * pool-or-total balance is PolicyStore.availableBalanceFor(benefit).
+   * Balances a payment here is capped at — the category/pool, then the total
+   * wallet. STATIC for now; the live pool balance is PolicyStore.poolBalanceFor.
    */
-  protected readonly walletBalance = computed(() => MOCK_WALLET_BALANCE);
+  protected readonly walletBalances = computed<WalletBalances>(() => MOCK_WALLET_BALANCES);
   protected readonly BenefitCategory = BenefitCategory;
   protected readonly dentists = DENTISTS;
   protected readonly patients = PATIENTS;
@@ -260,8 +260,8 @@ export class DentalPage {
   });
   protected readonly currentStep = computed<Step>(() => this.steps()[this.step()] ?? 'compare');
 
-  protected readonly consultPay = computed(() => breakdown(this.dentist()?.fee ?? 0, this.walletBalance()));
-  protected readonly procPay = computed(() => breakdown(this.estimate() || 0, this.walletBalance()));
+  protected readonly consultPay = computed(() => breakdown(this.dentist()?.fee ?? 0, this.walletBalances()));
+  protected readonly procPay = computed(() => breakdown(this.estimate() || 0, this.walletBalances()));
 
   protected primaryLabel(): string {
     switch (this.currentStep()) {

@@ -6,10 +6,11 @@
  *   2. What is left after the co-payment is what the wallet can cover.
  *   3. The wallet pays the lower of that and the limit — the limit is the most
  *      the wallet ever pays.
- *   4. Cashless only: if that is still more than the wallet balance available,
- *      the wallet pays the balance.
- *   5. Anything above the limit (and above the balance) is the member's, on top
- *      of the co-payment.
+ *   4. Cashless only: that is then capped at the category/pool balance
+ *      available, and after that at the total wallet balance available — a
+ *      pool can be untouched while the wallet as a whole runs low.
+ *   5. Anything above the limit or either balance is the member's, on top of
+ *      the co-payment.
  *
  * Example: bill ₹1,500, 20% co-payment, ₹500 limit → co-payment ₹300, ₹1,200
  * after co-payment, wallet pays ₹500, ₹700 above the limit, member pays ₹1,000.
@@ -31,22 +32,32 @@ export interface PaymentSplit {
   readonly afterCopay: number;
   /** Null means no limit. */
   readonly limit: number | null;
-  /** Wallet balance available; null when the balance does not cap (claims). */
-  readonly balance: number | null;
+  /** Category/pool balance available; null when it does not cap (claims). */
+  readonly poolBalance: number | null;
+  /** Total wallet balance available; null when it does not cap (claims). */
+  readonly totalBalance: number | null;
   readonly walletPays: number;
   /** The part of `afterCopay` the limit leaves to the member. */
   readonly aboveLimit: number;
-  /** What the limit allowed but the wallet balance could not cover. */
-  readonly aboveBalance: number;
-  /** Co-payment plus anything above the limit or the balance. */
+  /** What the limit allowed but the category/pool balance could not cover. */
+  readonly abovePool: number;
+  /** What the pool allowed but the total wallet balance could not cover. */
+  readonly aboveTotal: number;
+  /** Co-payment plus anything above the limit or either balance. */
   readonly memberPays: number;
+}
+
+/** The balances a cashless payment is capped at, in order. */
+export interface WalletBalances {
+  readonly pool: number | null;
+  readonly total: number | null;
 }
 
 export function splitPayment(
   bill: number,
   copay: Copay,
   limit: number | null,
-  balance: number | null = null,
+  balances: WalletBalances | null = null,
 ): PaymentSplit {
   const safeBill = Math.max(0, bill);
   const copayAmount =
@@ -55,27 +66,33 @@ export function splitPayment(
       : Math.min(copay.value, safeBill);
   const afterCopay = safeBill - copayAmount;
   const withinLimit = limit !== null && limit > 0 ? Math.min(afterCopay, limit) : afterCopay;
-  // Last, and only when it bites: the wallet cannot pay more than it holds.
-  const safeBalance = balance !== null ? Math.max(0, balance) : null;
-  const walletPays = safeBalance !== null ? Math.min(withinLimit, safeBalance) : withinLimit;
+  // Then the balances, and only where they bite: the category/pool first, then
+  // the wallet as a whole.
+  const pool = balances?.pool != null ? Math.max(0, balances.pool) : null;
+  const total = balances?.total != null ? Math.max(0, balances.total) : null;
+  const withinPool = pool !== null ? Math.min(withinLimit, pool) : withinLimit;
+  const walletPays = total !== null ? Math.min(withinPool, total) : withinPool;
   const aboveLimit = afterCopay - withinLimit;
-  const aboveBalance = withinLimit - walletPays;
+  const abovePool = withinLimit - withinPool;
+  const aboveTotal = withinPool - walletPays;
   return {
     bill: safeBill,
     copay,
     copayAmount,
     afterCopay,
     limit: limit !== null && limit > 0 ? limit : null,
-    balance: safeBalance,
+    poolBalance: pool,
+    totalBalance: total,
     walletPays,
     aboveLimit,
-    aboveBalance,
-    memberPays: copayAmount + aboveLimit + aboveBalance,
+    abovePool,
+    aboveTotal,
+    memberPays: copayAmount + aboveLimit + abovePool + aboveTotal,
   };
 }
 
-/** Fallback wallet balance for the mock cashless screens when no policy is loaded. */
-export const MOCK_WALLET_BALANCE = 5000;
+/** STATIC balances for the mock cashless screens: the category/pool, then the wallet. */
+export const MOCK_WALLET_BALANCES: WalletBalances = { pool: 5000, total: 40000 };
 
 /** Percentage co-payment, the usual case on the cashless screens. */
 export function percentCopay(value: number): Copay {

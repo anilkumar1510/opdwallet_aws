@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 
-import { MOCK_WALLET_BALANCE, splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { MOCK_WALLET_BALANCES, WalletBalances, splitPayment, percentCopay } from '../../core/domain/payment-split';
 import { PolicyStore } from '../../core/member/policy.store';
 import { PaymentSplitView } from '../../shared/ui/payment-split';
 
@@ -333,10 +333,10 @@ export function readUploadedDocId(body: unknown): string | null {
 export class PharmacyPage {
   protected readonly claimModes = inject(ClaimModeStore);
   /**
-   * Wallet balance this benefit can draw on. Fixed mock for now; the live
-   * pool-or-total balance is PolicyStore.availableBalanceFor(benefit).
+   * Balances a payment here is capped at — the category/pool, then the total
+   * wallet. STATIC for now; the live pool balance is PolicyStore.poolBalanceFor.
    */
-  protected readonly walletBalance = computed(() => MOCK_WALLET_BALANCE);
+  protected readonly walletBalances = computed<WalletBalances>(() => MOCK_WALLET_BALANCES);
   protected readonly BenefitCategory = BenefitCategory;
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
@@ -496,8 +496,8 @@ export class PharmacyPage {
   /** Wallet share + co-payment on the current (reducible) cart. */
   protected readonly pay = computed(() => {
     const cartValue = this.cart().reduce((s, i) => s + i.qty * i.unitPrice, 0);
-    // Co-payment first, then the per-transaction limit, then the wallet balance.
-    const split = splitPayment(cartValue, percentCopay(COPAY_PCT), PER_TXN_LIMIT, this.walletBalance());
+    // Co-payment first, then the per-transaction limit, then the category/pool and total wallet balances.
+    const split = splitPayment(cartValue, percentCopay(COPAY_PCT), PER_TXN_LIMIT, this.walletBalances());
     return { cartValue, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
   });
 

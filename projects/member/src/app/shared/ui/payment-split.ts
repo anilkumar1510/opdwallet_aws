@@ -31,13 +31,18 @@ const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
       <div class="flex justify-between gap-3">
         <dt class="text-ink-700">{{ limitLabel() }}</dt><dd class="font-medium text-ink-900">{{ s.limit !== null ? '₹' + n(s.limit) : 'No limit' }}</dd>
       </div>
-      @if (s.balance !== null) {
+      @if (s.poolBalance !== null) {
         <div class="flex justify-between gap-3">
-          <dt class="text-ink-700">Wallet balance available</dt><dd class="font-medium text-ink-900">₹{{ n(s.balance) }}</dd>
+          <dt class="text-ink-700">Category/Pool balance available</dt><dd class="font-medium text-ink-900">₹{{ n(s.poolBalance) }}</dd>
+        </div>
+      }
+      @if (s.totalBalance !== null) {
+        <div class="flex justify-between gap-3">
+          <dt class="text-ink-700">Total wallet balance available</dt><dd class="font-medium text-ink-900">₹{{ n(s.totalBalance) }}</dd>
         </div>
       }
       <div class="flex justify-between gap-3">
-        <dt class="text-ink-700">{{ walletLabel() }} <span class="text-xs text-ink-500">· {{ s.balance !== null ? 'the lowest of these' : 'the lower of the two' }}</span></dt>
+        <dt class="text-ink-700">{{ walletLabel() }} <span class="text-xs text-ink-500">· {{ s.poolBalance !== null || s.totalBalance !== null ? 'the lowest of these' : 'the lower of the two' }}</span></dt>
         <dd class="font-medium text-success-700">₹{{ n(s.walletPays) }}</dd>
       </div>
       @if (s.aboveLimit > 0) {
@@ -46,20 +51,27 @@ const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
           <dd class="font-medium text-ink-900">₹{{ n(s.aboveLimit) }}</dd>
         </div>
       }
-      @if (s.aboveBalance > 0) {
+      @if (s.abovePool > 0) {
         <div class="flex justify-between gap-3">
-          <dt class="text-ink-700">Above wallet balance <span class="text-xs text-ink-500">· paid by you</span></dt>
-          <dd class="font-medium text-ink-900">₹{{ n(s.aboveBalance) }}</dd>
+          <dt class="text-ink-700">Above category/pool balance <span class="text-xs text-ink-500">· paid by you</span></dt>
+          <dd class="font-medium text-ink-900">₹{{ n(s.abovePool) }}</dd>
+        </div>
+      }
+      @if (s.aboveTotal > 0) {
+        <div class="flex justify-between gap-3">
+          <dt class="text-ink-700">Above total wallet balance <span class="text-xs text-ink-500">· paid by you</span></dt>
+          <dd class="font-medium text-ink-900">₹{{ n(s.aboveTotal) }}</dd>
         </div>
       }
       <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
         <dt class="font-semibold text-ink-900">
           {{ youPayLabel() }}
-          @if (s.aboveLimit > 0 || s.aboveBalance > 0) {
+          @if (s.aboveLimit > 0 || s.abovePool > 0 || s.aboveTotal > 0) {
             <span class="block text-xs font-normal text-ink-500">
               Co-payment ₹{{ n(s.copayAmount) }}
               @if (s.aboveLimit > 0) { + above the limit ₹{{ n(s.aboveLimit) }} }
-              @if (s.aboveBalance > 0) { + above wallet balance ₹{{ n(s.aboveBalance) }} }
+              @if (s.abovePool > 0) { + above category/pool balance ₹{{ n(s.abovePool) }} }
+              @if (s.aboveTotal > 0) { + above total wallet balance ₹{{ n(s.aboveTotal) }} }
             </span>
           }
         </dt>

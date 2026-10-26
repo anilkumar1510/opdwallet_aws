@@ -163,6 +163,11 @@ export class PolicyStore {
    * balance. Cashless payments are capped at this, after co-payment and limit.
    */
   availableBalanceFor(category: BenefitCategory, relationshipCode?: string): number {
+    return this.poolBalanceFor(category, relationshipCode) ?? this.walletTotal().available.amount;
+  }
+
+  /** The benefit's category/pool available balance, or null when it has no pool. */
+  poolBalanceFor(category: BenefitCategory, relationshipCode?: string): number | null {
     const version = this._version();
     const relCode = (relationshipCode || this._activeRelationshipCode() || 'self').trim().toLowerCase();
     const rel = version ? (findRelationshipInVersion(version, relCode) ?? getPrimaryRelationship(version)) : undefined;
@@ -173,7 +178,7 @@ export class PolicyStore {
     const pool = poolCode
       ? this.pools().find((p) => p.code?.trim().toUpperCase() === poolCode || p.id?.trim().toUpperCase() === poolCode)
       : undefined;
-    return pool ? pool.available.amount : this.walletTotal().available.amount;
+    return pool ? pool.available.amount : null;
   }
 
   /**

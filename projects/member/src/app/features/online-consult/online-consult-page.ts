@@ -645,9 +645,11 @@ export class OnlineConsultPage implements OnInit {
     const fee = this.doctor()?.fee ?? 0;
     const perTxnLimit = this.perTxn();
     const ceiling = this.doctorFeeCeiling();
-    // The benefit's pool balance when it is assigned to a pool, else the total wallet.
+    // The benefit's category/pool balance (when it is in a pool), then the
+    // total wallet balance.
     const pat = this.patient();
-    const availableBalance = this.policyStore.availableBalanceFor(BenefitCategory.OnlineConsultation, pat?.rel);
+    const poolBalance = this.policyStore.poolBalanceFor(BenefitCategory.OnlineConsultation, pat?.rel);
+    const totalBalance = this.policyStore.walletTotal().available.amount;
 
     // Co-payment first, on the whole fee; then the per-transaction limit
     // (narrowed by the doctor-fee ceiling when that is lower); then the
@@ -657,7 +659,7 @@ export class OnlineConsultPage implements OnInit {
       fee,
       { mode: this.copayMode() === 'flat' ? 'FLAT' : 'PERCENT', value: this.copayPct() },
       ceilingBites ? ceiling : perTxnLimit,
-      availableBalance,
+      { pool: poolBalance, total: totalBalance },
     );
     return {
       fee,
@@ -667,7 +669,7 @@ export class OnlineConsultPage implements OnInit {
       copay: split.copayAmount,
       afterCopay: split.afterCopay,
       walletBlock: split.walletPays,
-      excess: split.aboveLimit + split.aboveBalance,
+      excess: split.aboveLimit + split.abovePool + split.aboveTotal,
       selfPay: split.memberPays,
       ceiling,
       perTxnLimit,
