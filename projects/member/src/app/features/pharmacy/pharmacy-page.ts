@@ -1,6 +1,9 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 
+import { splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PaymentSplitView } from '../../shared/ui/payment-split';
+
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
@@ -92,7 +95,7 @@ export function readUploadedDocId(body: unknown): string | null {
 @Component({
   selector: 'opd-pharmacy-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent, ClaimOption, CoverageBannerComponent],
+  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent, ClaimOption, CoverageBannerComponent, PaymentSplitView],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -290,16 +293,7 @@ export function readUploadedDocId(body: unknown): string | null {
                               </button>
                             }
                             @case ('payment') {
-                              <dl class="space-y-2 text-sm">
-                                <div class="flex justify-between"><dt class="text-ink-700">Cart value</dt><dd class="font-medium text-ink-900">₹{{ pay().cartValue }}</dd></div>
-                                <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                                <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
-                                <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet deducted</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
-                                @if (pay().excess > 0) {
-                                  <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
-                                }
-                                <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
-                              </dl>
+                              <opd-payment-split [split]="pay().split" billLabel="Cart value" />
                               <p class="mt-3 text-xs text-ink-500">Wallet is deducted and the co-payment goes through Razorpay. The wallet block becomes a debit on delivery.</p>
                             }
                           }
@@ -496,11 +490,9 @@ export class PharmacyPage {
   /** Wallet share + co-payment on the current (reducible) cart. */
   protected readonly pay = computed(() => {
     const cartValue = this.cart().reduce((s, i) => s + i.qty * i.unitPrice, 0);
-    const covered = Math.min(cartValue, PER_TXN_LIMIT);
-    const copay = Math.round((covered * COPAY_PCT) / 100);
-    const walletBlock = covered - copay;
-    const excess = Math.max(0, cartValue - PER_TXN_LIMIT);
-    return { cartValue, covered, copay, walletBlock, excess, selfPay: copay + excess };
+    // Co-payment first, then the per-transaction limit.
+    const split = splitPayment(cartValue, percentCopay(COPAY_PCT), PER_TXN_LIMIT);
+    return { cartValue, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
   });
 
   protected uploadLabel(): string {
