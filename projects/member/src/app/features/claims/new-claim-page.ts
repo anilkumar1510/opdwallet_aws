@@ -152,6 +152,10 @@ const STEPS = [
                   </section>
                 }
                 <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+                  <!-- Payouts go only to the employee's own account. -->
+                  <p class="mb-4 rounded-xl border border-[#FDE68A] bg-warning-50 px-4 py-3 text-sm font-bold text-ink-900" role="note">
+                    Please enter the employee’s bank account details only. Submissions with bank details belonging to another individual will be rejected.
+                  </p>
                   <h2 class="mb-1 text-base font-semibold text-[#0E51A2] lg:text-lg">Bank account for payout</h2>
                   <p class="mb-4 text-xs text-ink-500">
                     Approved claims are credited to this account, not to the wallet. An adjudicator verifies it once,
