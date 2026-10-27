@@ -20,6 +20,13 @@ export const environment = {
    * spinning on a connection that cannot succeed.
    */
   agoraAppId: '',
+
+  /**
+   * Google Maps Map ID for the claim location picker. Advanced markers need
+   * one; `DEMO_MAP_ID` is Google's development-only ID. Without an ID the map
+   * still works, just without the marker.
+   */
+  googleMapsMapId: 'DEMO_MAP_ID',
   applicationURL: 'habithealth.com',
   OPD_WALLET_PUBLIC_PATH: 'https://opd-wallet.habithealth.com'
 } as const;

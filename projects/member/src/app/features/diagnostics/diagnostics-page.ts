@@ -1,16 +1,27 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal, inject } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, input, signal, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 import { MOCK_WALLET_BALANCES, WalletBalances, splitPayment, percentCopay } from '../../core/domain/payment-split';
 import { PolicyStore } from '../../core/member/policy.store';
 import { PaymentSplitView } from '../../shared/ui/payment-split';
 
 import { BenefitCategory } from '../../core/domain/codes';
+import { AppService } from '../../core/http/api.service';
+import { Place } from '../../core/location/location';
+import { LocationStore } from '../../core/location/location.store';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
 import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
+import { readUploadedDocId } from '../../shared/uploaded-doc-id';
 
 /**
- * Pathology / Radiology & Cardiology — DUMMY / STATIC journey, zero backend.
+ * Pathology / Radiology & Cardiology — DUMMY / STATIC journey, except the
+ * prescription upload, which posts to `/dms/api/v1/emrImage` as Pharmacy does,
+ * the postal-code search, which calls system-management
+ * `GET_ADDRESS_BY_AUTOCOMPLETE_SEARCH` as the website does, and the submit,
+ * which posts the uploaded prescription and postal code to habit-opd.
  *
  * Patient-flows Section 7 (prescription-led), all mock. Two cards share this
  * flow (kind bound from the route). The member submits a PRESCRIPTION and a
@@ -29,7 +40,7 @@ import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
  *   → confirmed → order placed / receipt → sample collection / scan
  *   → report upload (opens 76 hrs after delivery) → completed + invoice.
  *
- * No network calls. See REMOVED-APIS.md.
+ * No other network calls. See REMOVED-APIS.md.
  */
 
 type Kind = 'PATHOLOGY' | 'RADIOLOGY';
@@ -75,20 +86,54 @@ const PRESCRIBED: Record<Kind, string[]> = {
   RADIOLOGY: ['ECG', '2D Echo', 'Chest X-Ray'],
 };
 
-interface PinArea { pin: string; area: string; district: string; state: string; }
+interface SubmitEndpoint { resource: string; action: string; }
 
-/** Serviceable postal codes — placeholder for the pincode-lookup API. */
-const PIN_AREAS: PinArea[] = [
-  { pin: '560103', area: 'Bellandur', district: 'Bengaluru Urban', state: 'Karnataka' },
-  { pin: '560102', area: 'HSR Layout', district: 'Bengaluru Urban', state: 'Karnataka' },
-  { pin: '560037', area: 'Marathahalli', district: 'Bengaluru Urban', state: 'Karnataka' },
-  { pin: '560066', area: 'Whitefield', district: 'Bengaluru Urban', state: 'Karnataka' },
-  { pin: '560034', area: 'Koramangala', district: 'Bengaluru Urban', state: 'Karnataka' },
-  { pin: '560001', area: 'MG Road', district: 'Bengaluru Urban', state: 'Karnataka' },
-];
+/** The habit-opd resource and action a submitted order is posted to, per kind. */
+const SUBMIT_ENDPOINT: Record<Kind, SubmitEndpoint> = {
+  PATHOLOGY: { resource: 'opd_pathology_prescription', action: 'submit_prescription' },
+  RADIOLOGY: { resource: 'opd_radiology_consumption', action: 'submit_adjudication' },
+};
 
-/** "Use my current location" — placeholder geolocation. */
-const CURRENT_LOCATION_PIN = '560103';
+const SUBMIT_FAILED = 'We could not submit your order. Please try again.';
+
+/** TEMPORARY: a fixed key until the client generates one per submission. */
+const IDEMPOTENCY_KEY = 'IDEMP-2026-10-23-001';
+
+/** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
+function submitFailure(response: unknown): string | null {
+  let body = response;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { return null; }
+  }
+  if (typeof body !== 'object' || body === null) return null;
+  const { errCode, message } = body as { errCode?: unknown; message?: unknown };
+  if (errCode === undefined || errCode === null || Number(errCode) === 0) return null;
+  return typeof message === 'string' && message.trim() ? message : SUBMIT_FAILED;
+}
+
+/** Fewer digits than this and the postal-code search is not sent. */
+const MIN_PIN_QUERY = 3;
+/** The search runs when typing pauses, not on every key. */
+const PIN_SEARCH_DEBOUNCE_MS = 400;
+
+/** The session keys the website's postal box writes, so later steps read the same pick. */
+function rememberPin(place: Place): void {
+  try {
+    sessionStorage.setItem('selectedPincode', place.pincode);
+    sessionStorage.setItem('selectedCity', place.city);
+    sessionStorage.setItem('selectedState', place.state);
+    // A pick without coordinates must not leave the previous pick's behind.
+    if (place.latitude !== null && place.longitude !== null) {
+      sessionStorage.setItem('selectedLatitude', String(place.latitude));
+      sessionStorage.setItem('selectedLongitude', String(place.longitude));
+    } else {
+      sessionStorage.removeItem('selectedLatitude');
+      sessionStorage.removeItem('selectedLongitude');
+    }
+  } catch {
+    // Storage can be unavailable (private mode); the page's signals still hold the pick.
+  }
+}
 
 type AddressType = 'Home' | 'Work' | 'Other';
 interface SavedAddress { id: string; type: AddressType; line1: string; line2: string; landmark: string; city: string; state: string; }
@@ -159,6 +204,9 @@ const COLLECTION_CHARGE = 150;
 const PER_TXN_LIMIT = 500;
 const COPAY_PCT = 20;
 
+/** Matches the "up to 5 MB" hint on the upload card. */
+const MAX_RX_BYTES = 5 * 1024 * 1024;
+
 /** Member-visible fulfilment stages after payment (backend flow 3 stays admin-side). */
 const LIFECYCLE = ['Order confirmed with provider', 'Sample collection / scan', 'Report uploaded to Health Records'];
 
@@ -199,41 +247,45 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
 
               @case ('rx') {
                 <p class="mb-2 text-sm font-medium text-ink-700">Prescription</p>
+                <input type="file" class="sr-only" accept="image/*,.pdf" id="dx-rx" [disabled]="documentUploading()" (change)="onPrescription($event)" />
                 <div class="mb-3 grid gap-3 sm:grid-cols-2">
-                  <button type="button" class="rounded-xl border px-4 py-3 text-left text-sm" [class.border-brand-500]="rxSource() === 'existing'" [class.bg-blue-50]="rxSource() === 'existing'" [class.border-surface-border]="rxSource() !== 'existing'" (click)="rxSource.set('existing')">
+                  <button type="button" class="rounded-xl border px-4 py-3 text-left text-sm" [class.border-brand-500]="rxSource() === 'existing'" [class.bg-blue-50]="rxSource() === 'existing'" [class.border-surface-border]="rxSource() !== 'existing'" (click)="useExisting()">
                     <span class="font-semibold text-ink-900">Use existing</span>
                     <span class="block text-xs text-ink-500">Dr A. Rao · {{ prescribed().length }} tests</span>
                   </button>
-                  <button type="button" class="rounded-xl border border-dashed px-4 py-3 text-left text-sm" [class.border-brand-500]="rxSource() === 'upload'" [class.bg-blue-50]="rxSource() === 'upload'" [class.border-surface-border]="rxSource() !== 'upload'" (click)="rxSource.set('upload')">
-                    <span class="font-semibold text-ink-900">📎 Upload prescription</span>
-                    <span class="block text-xs text-ink-500">{{ rxSource() === 'upload' ? 'prescription.pdf selected' : 'JPG / PNG / PDF, up to 5 MB' }}</span>
-                  </button>
+                  <label for="dx-rx" class="cursor-pointer rounded-xl border border-dashed px-4 py-3 text-left text-sm" [class.border-brand-500]="rxSource() === 'upload'" [class.bg-blue-50]="rxSource() === 'upload'" [class.border-surface-border]="rxSource() !== 'upload'" [class.pointer-events-none]="documentUploading()" [class.opacity-60]="documentUploading()">
+                    <span class="font-semibold text-ink-900">📎 {{ uploadLabel() }}</span>
+                    <span class="block truncate text-xs text-ink-500">{{ uploadHint() }}</span>
+                  </label>
                 </div>
+                @if (uploadError(); as err) { <p class="mb-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p> }
 
                 <label for="dx-pin" class="mb-1 mt-4 block text-sm font-medium text-ink-700">Postal code <span class="text-danger-600">*</span></label>
                 <div class="flex min-h-touch items-center gap-2 rounded-xl border border-surface-border bg-[#F2F4F8] px-3 focus-within:border-brand-500">
                   <span aria-hidden="true">📍</span>
                   <input id="dx-pin" class="min-w-0 flex-1 bg-transparent text-sm outline-none" inputmode="numeric" maxlength="6" placeholder="Enter postal code" [value]="pinQuery()" (input)="onPinInput($event)" />
                 </div>
-                <button type="button" class="mt-3 flex items-center gap-2 text-sm font-medium text-[#0F5FDC]" (click)="useCurrentLocation()"><span aria-hidden="true">◎</span> Use my current location</button>
-                @if (pinQuery().length >= 2) {
+                <button type="button" class="mt-3 flex items-center gap-2 text-sm font-medium text-[#0F5FDC] disabled:opacity-60" [disabled]="location.busy()" (click)="useCurrentLocation()"><span aria-hidden="true">◎</span> {{ location.busy() ? 'Detecting your location…' : 'Use my current location' }}</button>
+                @if (pinQuery().length > 0 && pinQuery().length < minPinQuery) {
+                  <p class="mt-2 text-xs text-ink-500">Type at least {{ minPinQuery }} digits to search.</p>
+                }
+                @if (pinSearching()) {
+                  <p class="mt-4 text-xs text-ink-500">Searching postal codes…</p>
+                } @else if (pinResults().length) {
                   <div class="mt-4 border-t border-surface-border pt-3">
                     <p class="mb-2 text-xs font-medium text-ink-700">Search results</p>
-                    @if (pinResults().length) {
-                      <div class="scrollbar-hide -mr-5 flex gap-3 overflow-x-auto pb-1 pr-5 lg:mr-0 lg:pr-0">
-                        @for (p of pinResults(); track p.pin) {
-                          <button type="button" class="w-[210px] shrink-0 rounded-xl border-[1.5px] px-3 py-2.5 text-left" [class.border-[#0F5FDC]]="postal() === p.pin" [class.border-surface-border]="postal() !== p.pin" (click)="selectPin(p)">
-                            <span class="block text-sm font-medium text-ink-900">📍 {{ p.pin }}</span>
-                            <span class="mt-0.5 block text-xs text-ink-500">{{ p.area }}, {{ p.district }}, {{ p.state }}</span>
-                          </button>
-                        }
-                      </div>
-                    } @else if (pinQuery().length === 6) {
-                      <p class="rounded-xl bg-warning-50 px-3 py-2 text-sm text-warning-700">We don't serve {{ pinQuery() }} yet. Try a nearby postal code.</p>
-                    } @else {
-                      <p class="text-xs text-ink-500">No matching postal code.</p>
-                    }
+                    <div class="scrollbar-hide -mr-5 flex gap-3 overflow-x-auto pb-1 pr-5 lg:mr-0 lg:pr-0" role="listbox" aria-label="Search results">
+                      @for (p of pinResults(); track $index) {
+                        <button type="button" role="option" class="w-[210px] shrink-0 rounded-xl border-[1.5px] px-3 py-2.5 text-left" [attr.aria-selected]="isPinSelected(p)" [class.border-[#0F5FDC]]="isPinSelected(p)" [class.border-surface-border]="!isPinSelected(p)" (click)="selectPin(p)">
+                          <span class="block text-sm font-medium text-ink-900">📍 {{ p.pincode }}</span>
+                          <span class="mt-0.5 line-clamp-2 block text-xs text-ink-500">{{ p.label }}</span>
+                        </button>
+                      }
+                    </div>
                   </div>
+                }
+                @if (pinError(); as err) {
+                  <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs text-danger-700" role="alert">{{ err }}</p>
                 }
                 <p class="mt-3 rounded-xl bg-warning-50 px-3 py-2 text-xs text-warning-700">⚠ Select the correct postal code for the cart. Providers are shown on the basis of this postal code and the nearby radius — a wrong postal code produces a cart no provider can serve, and you only find out at the end.</p>
               }
@@ -310,7 +362,7 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
                             <div class="rounded-xl bg-[#F2F4F8] px-4 py-2.5 text-sm text-ink-900">
                               @switch (key) {
                                 @case ('pincode') {
-                                  {{ postal() }} @if (pinArea(); as a) { <span class="text-ink-500">· {{ a.area }}, {{ a.district }}</span> }
+                                  {{ postal() }} @if (pinPlace(); as a) { <span class="text-ink-500">· {{ a.label }}</span> }
                                   <span class="mt-0.5 block text-xs text-ink-500">Fixed for this order — providers were matched to it.</span>
                                 }
                                 @case ('provider') {
@@ -540,8 +592,8 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
           </section>
 
           <div class="mt-5 flex gap-3">
-            <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900 hover:border-[#A4BFFE7A]" (click)="back()">Back</button>
-            <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="next()">{{ primaryLabel() }}</button>
+            <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900 hover:border-[#A4BFFE7A] disabled:opacity-50" [disabled]="submitting()" (click)="back()">Back</button>
+            <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50" [disabled]="submitting()" (click)="next()">{{ primaryLabel() }}</button>
           </div>
         }
       </div>
@@ -550,6 +602,11 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
 })
 export class DiagnosticsPage {
   protected readonly claimModes = inject(ClaimModeStore);
+  private readonly http = inject(HttpClient);
+  private readonly appService = inject(AppService);
+  private readonly router = inject(Router);
+  protected readonly location = inject(LocationStore);
+  protected readonly BenefitCategory = BenefitCategory;
   /** The benefit this page books, for the policy's claim mode. */
   protected readonly claimCategory = computed(() => (this.kind() === 'RADIOLOGY' ? BenefitCategory.Radiology : BenefitCategory.Pathology));
   /**
@@ -557,7 +614,6 @@ export class DiagnosticsPage {
    * wallet. STATIC for now; the live pool balance is PolicyStore.poolBalanceFor.
    */
   protected readonly walletBalances = computed<WalletBalances>(() => MOCK_WALLET_BALANCES);
-  protected readonly BenefitCategory = BenefitCategory;
   /** Bound from route data via withComponentInputBinding(). */
   readonly kind = input<Kind>('PATHOLOGY');
 
@@ -568,16 +624,34 @@ export class DiagnosticsPage {
   protected readonly started = signal(false);
   protected readonly step = signal(0);
   protected readonly stepError = signal<string | null>(null);
+  protected readonly submitting = signal(false);
 
   protected readonly rxSource = signal<'existing' | 'upload' | null>(null);
+  protected readonly uploadedFile = signal<string | null>(null);
+  protected readonly uploadedDocId = signal<string | null>(null);
+  protected readonly documentUploading = signal(false);
+  protected readonly uploadError = signal<string | null>(null);
+  /** Bumped whenever the upload is dropped, so a response still in flight is ignored. */
+  private uploadSeq = 0;
   protected readonly postal = signal('');
   protected readonly adjResult = signal<AdjResult>('pending');
   protected readonly selectedCart = signal<ProviderCart | null>(null);
   protected readonly mode = signal<'home' | 'centre' | null>(null);
   protected readonly centre = signal('');
 
-  // Postal code search.
+  // Postal code search (system-management address autocomplete).
+  protected readonly minPinQuery = MIN_PIN_QUERY;
   protected readonly pinQuery = signal('');
+  protected readonly pinResults = signal<readonly Place[]>([]);
+  protected readonly pinSearching = signal(false);
+  protected readonly pinError = signal<string | null>(null);
+  /** The picked result; `postal` is its pincode. */
+  protected readonly pinPlace = signal<Place | null>(null);
+  private pinTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Only the latest search may write its results: an older response arriving late is dropped. */
+  private pinSearchSeq = 0;
+  /** Coordinates for a pick land later; a newer pick, or typing, makes them stale. */
+  private pinPickSeq = 0;
 
   // Date and time slot.
   protected readonly slotTimes = SLOT_TIMES;
@@ -606,6 +680,10 @@ export class DiagnosticsPage {
 
   protected readonly steps: Step[] = ['rx', 'queue', 'compare', 'breakdown', 'pending', 'placed', 'progress'];
   protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'rx');
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.pinTimer));
+  }
 
   protected title = computed(() => (this.kind() === 'RADIOLOGY' ? 'Radiology & Cardiology' : 'Pathology'));
   protected readonly prescribed = computed(() => PRESCRIBED[this.kind()]);
@@ -640,6 +718,7 @@ export class DiagnosticsPage {
   protected cartTotal(c: ProviderCart): number { return c.tests.reduce((s, t) => s + t.price, 0); }
 
   protected primaryLabel(): string {
+    if (this.submitting()) return 'Submitting…';
     switch (this.currentStep()) {
       case 'rx': return 'Submit';
       case 'compare': return this.adjResult() === 'rejected' ? 'Start over' : 'Continue';
@@ -653,14 +732,114 @@ export class DiagnosticsPage {
   protected start(): void { this.started.set(true); this.step.set(0); this.stepError.set(null); }
   protected advanceStage(): void { this.stage.set(Math.min(LIFECYCLE.length, this.stage() + 1)); }
 
+  // ── Prescription upload ────────────────────────────────────────────────
+
+  protected uploadLabel(): string {
+    if (this.documentUploading()) return 'Uploading…';
+    return this.uploadedDocId() ? 'Replace prescription' : 'Upload prescription';
+  }
+
+  protected uploadHint(): string {
+    if (this.documentUploading()) return 'Uploading your prescription…';
+    const file = this.uploadedFile();
+    return file ? `${file} uploaded` : 'JPG / PNG / PDF, up to 5 MB';
+  }
+
+  /** Only one prescription goes with the order, so switching drops the upload and its doc id. */
+  protected useExisting(): void {
+    this.clearUpload();
+    this.rxSource.set('existing');
+  }
+
+  protected onPrescription(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.rxSource.set('upload');
+    if (file.size > MAX_RX_BYTES) {
+      this.clearUpload();
+      this.stepError.set(null);
+      this.uploadError.set('This file is larger than 5 MB. Choose a smaller one.');
+      return;
+    }
+    this.uploadPrescription(file);
+  }
+
+  /**
+   * The X-XSRF-TOKEN is computed over the file's own bytes, so the read has to
+   * finish before the request is issued — posting the FormData directly breaks it.
+   */
+  private uploadPrescription(file: File): void {
+    this.clearUpload();
+    this.stepError.set(null);
+    this.documentUploading.set(true);
+    const seq = this.uploadSeq;
+    const current = () => seq === this.uploadSeq;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (!current()) return;
+      this.http
+        .post('/dms/api/v1/emrImage', this.prescriptionFormData(file), {
+          headers: new HttpHeaders()
+            .set('X-XSRF-TOKEN', this.appService.getXsrfToken(reader.result, true))
+            .set('timezone', this.appService.getUserTimezone())
+            .set('current_time', this.appService.getCurrentTime())
+            .set('current_url', this.router.url)
+            .set('host_name', window.location.host),
+          responseType: 'json',
+          observe: 'response' as 'response',
+        })
+        .subscribe({
+          next: (response) => { if (current()) this.onPrescriptionUploaded(file, response.body); },
+          error: () => { if (current()) this.failUpload(); },
+        });
+    };
+    reader.onerror = () => { if (current()) this.failUpload(); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  private prescriptionFormData(file: File): FormData {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fileName', file.name);
+    formData.append('action', 'add');
+    return formData;
+  }
+
+  private onPrescriptionUploaded(file: File, body: unknown): void {
+    this.documentUploading.set(false);
+    const docId = readUploadedDocId(body);
+    if (!docId) {
+      this.failUpload();
+      return;
+    }
+    this.uploadedDocId.set(docId);
+    this.uploadedFile.set(file.name);
+  }
+
+  private failUpload(): void {
+    this.documentUploading.set(false);
+    this.uploadedDocId.set(null);
+    this.uploadedFile.set(null);
+    this.uploadError.set('We could not upload your prescription. Try again.');
+  }
+
+  private clearUpload(): void {
+    this.uploadSeq++;
+    this.uploadedFile.set(null);
+    this.uploadedDocId.set(null);
+    this.uploadError.set(null);
+    this.documentUploading.set(false);
+  }
+
+  private resetPrescription(): void {
+    this.rxSource.set(null);
+    this.clearUpload();
+  }
+
   // ── Postal code ────────────────────────────────────────────────────────
-
-  protected readonly pinResults = computed(() => {
-    const q = this.pinQuery();
-    return q.length >= 2 ? PIN_AREAS.filter((p) => p.pin.startsWith(q)) : [];
-  });
-
-  protected readonly pinArea = computed(() => PIN_AREAS.find((p) => p.pin === this.postal()) ?? null);
 
   protected onPinInput(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -668,17 +847,100 @@ export class DiagnosticsPage {
     input.value = digits;
     this.pinQuery.set(digits);
     // A postal code counts only once it is picked from the results.
-    if (digits !== this.postal()) this.postal.set('');
+    if (digits !== this.postal()) {
+      this.pinPickSeq++;
+      this.postal.set('');
+      this.pinPlace.set(null);
+    }
+    clearTimeout(this.pinTimer);
+    if (digits.length < MIN_PIN_QUERY) {
+      this.clearPinSearch();
+      return;
+    }
+    this.pinTimer = setTimeout(() => void this.searchPins(digits), PIN_SEARCH_DEBOUNCE_MS);
   }
 
-  protected useCurrentLocation(): void {
-    const here = PIN_AREAS.find((p) => p.pin === CURRENT_LOCATION_PIN);
-    if (here) this.selectPin(here);
+  private async searchPins(query: string): Promise<void> {
+    const seq = ++this.pinSearchSeq;
+    this.pinSearching.set(true);
+    this.pinError.set(null);
+    try {
+      const places = await this.location.autocompleteAddresses(query);
+      if (seq !== this.pinSearchSeq) return;
+      // A row without a full postal code cannot be the order's postal code.
+      const pins = places.filter((p) => /^\d{6}$/.test(p.pincode));
+      this.pinResults.set(pins);
+      if (!pins.length) this.pinError.set(`No postal code matches "${query}".`);
+    } catch {
+      if (seq !== this.pinSearchSeq) return;
+      this.pinResults.set([]);
+      this.pinError.set('We could not search postal codes right now. Try again in a moment.');
+    } finally {
+      if (seq === this.pinSearchSeq) this.pinSearching.set(false);
+    }
   }
 
-  protected selectPin(p: PinArea): void {
-    this.pinQuery.set(p.pin);
-    this.postal.set(p.pin);
+  private clearPinSearch(): void {
+    this.pinSearchSeq++;
+    this.pinResults.set([]);
+    this.pinSearching.set(false);
+    this.pinError.set(null);
+  }
+
+  /** Rows can share a pincode across localities, so both are compared. */
+  protected isPinSelected(place: Place): boolean {
+    const sel = this.pinPlace();
+    return !!sel && sel.pincode === place.pincode && sel.label === place.label;
+  }
+
+  /**
+   * Fills the postal code from the browser location, reverse-geocoded. The
+   * detected place stands in as the only result so the pick stays visible.
+   */
+  protected async useCurrentLocation(): Promise<void> {
+    clearTimeout(this.pinTimer);
+    const place = await this.location.detect();
+    if (!place) {
+      this.pinError.set(this.location.error());
+      return;
+    }
+    this.clearPinSearch();
+    if (!/^\d{6}$/.test(place.pincode)) {
+      this.pinError.set('We could not find a postal code for your location. Enter it instead.');
+      return;
+    }
+    this.pinResults.set([place]);
+    await this.selectPin(place);
+  }
+
+  /**
+   * Adopts a pick and writes it to session storage. A row without coordinates
+   * is geocoded, as the Annual Health Check does, and the keys are written again
+   * once the coordinates land.
+   */
+  protected async selectPin(place: Place): Promise<void> {
+    clearTimeout(this.pinTimer);
+    const seq = ++this.pinPickSeq;
+    this.pinQuery.set(place.pincode);
+    this.postal.set(place.pincode);
+    this.pinPlace.set(place);
+    rememberPin(place);
+    if (place.latitude !== null && place.longitude !== null) return;
+
+    const coords = await this.location.coordinatesOf(place);
+    if (seq !== this.pinPickSeq || !coords) return;
+    const located: Place = { ...place, latitude: coords.lat, longitude: coords.lng };
+    this.pinPlace.set(located);
+    rememberPin(located);
+  }
+
+  private resetPinSearch(): void {
+    clearTimeout(this.pinTimer);
+    this.pinPickSeq++;
+    this.clearPinSearch();
+    this.pinPlace.set(null);
+    this.postal.set('');
+    this.pinQuery.set('');
   }
 
   // ── Accordion: provider → mode → address / centre ──────────────────────
@@ -838,6 +1100,10 @@ export class DiagnosticsPage {
     switch (this.currentStep()) {
       case 'rx':
         if (!this.rxSource()) return 'Upload a prescription or use an existing one.';
+        if (this.rxSource() === 'upload') {
+          if (this.documentUploading()) return 'Your prescription is still uploading.';
+          if (!this.uploadedDocId()) return this.uploadError() ?? 'Upload a prescription.';
+        }
         return /^\d{6}$/.test(this.postal()) ? null : 'Pick your postal code from the search results.';
       case 'queue': return this.adjResult() !== 'pending' ? null : 'Waiting on adjudication — use a button above.';
       case 'compare':
@@ -854,16 +1120,41 @@ export class DiagnosticsPage {
   }
 
   protected next(): void {
+    if (this.submitting()) return;
     const err = this.validate();
     if (err) { this.stepError.set(err); return; }
     this.stepError.set(null);
+    if (this.currentStep() === 'rx') {
+      const docId = this.uploadedDocId();
+      // "Use existing" has no uploaded document to send, so it stays on the mock flow.
+      if (this.rxSource() === 'upload' && docId) { void this.submitOrder(SUBMIT_ENDPOINT[this.kind()], docId); return; }
+    }
     // Rejected orders never reach payment — start over from the compare screen.
     if (this.currentStep() === 'compare' && this.adjResult() === 'rejected') { this.finish(); return; }
     if (this.currentStep() === 'progress') { this.finish(); return; }
     this.step.set(this.step() + 1);
   }
 
+  /** Hands the uploaded prescription and postal code to adjudication. */
+  private async submitOrder(endpoint: SubmitEndpoint, docId: string): Promise<void> {
+    this.submitting.set(true);
+    try {
+      const payload = { idempotency_key: IDEMPOTENCY_KEY, document_id: docId, pin_code: this.postal() };
+      const response = await firstValueFrom(
+        this.appService.postCall(endpoint.resource, 'habit-opd', undefined, payload, endpoint.action),
+      );
+      const failure = submitFailure(response);
+      if (failure) { this.stepError.set(failure); return; }
+      this.step.set(this.step() + 1);
+    } catch {
+      this.stepError.set(SUBMIT_FAILED);
+    } finally {
+      this.submitting.set(false);
+    }
+  }
+
   protected back(): void {
+    if (this.submitting()) return;
     this.stepError.set(null);
     if (this.step() === 0) { this.started.set(false); return; }
     this.step.set(this.step() - 1);
@@ -877,7 +1168,7 @@ export class DiagnosticsPage {
   private finish(): void {
     this.started.set(false);
     this.step.set(0);
-    this.rxSource.set(null); this.postal.set(''); this.pinQuery.set('');
+    this.resetPrescription(); this.resetPinSearch();
     this.adjResult.set('pending'); this.selectedCart.set(null);
     this.mode.set(null); this.centre.set('');
     this.addresses.set([...SEED_ADDRESSES]); this.addressId.set(null);

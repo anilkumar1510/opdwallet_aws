@@ -87,7 +87,7 @@ export class LocationStore {
   }
 
   /** The address within its pincode, then the pincode alone. Null when neither resolves. */
-  private async coordinatesOf(place: Place): Promise<{ lat: number; lng: number } | null> {
+  async coordinatesOf(place: Place): Promise<{ lat: number; lng: number } | null> {
     try {
       const key = await this.googleMapsKey();
       if (!key) return null;
@@ -238,18 +238,30 @@ export class LocationStore {
     }
   }
 
-  /** Fetched and decrypted once per page load; repeat taps reuse it. */
-  private mapsKey: string | null = null;
+  /** Decrypted keys by credential type, fetched once per page load. A miss is not cached. */
+  private readonly credentialKeys = new Map<string, string>();
 
-  private async googleMapsKey(): Promise<string | null> {
-    if (this.mapsKey) return this.mapsKey;
-    const response = await firstValueFrom(this.getCredentials('google_maps_key'));
+  private googleMapsKey(): Promise<string | null> {
+    return this.credentialKey('google_maps_key');
+  }
+
+  /** The key the claim location picker loads Maps JavaScript and Places (New) with. */
+  placesApiKey(): Promise<string | null> {
+    return this.credentialKey('Places_API_KEY');
+  }
+
+  /** A third-party credential, decrypted with the member's key. Null when none comes back. */
+  private async credentialKey(type: string): Promise<string | null> {
+    const cached = this.credentialKeys.get(type);
+    if (cached) return cached;
+    const response = await firstValueFrom(this.getCredentials(type));
     const parsed = typeof response === 'string' ? JSON.parse(response) : response;
     const resources: any[] = parsed?.resource ?? [];
     if (!resources.length) return null;
     const encryptKey = this.userInfoStore.getUserInfo()?.[0]?.api_encryption_key ?? null;
-    this.mapsKey = this.appService.decryptText(resources[0]?.value, encryptKey) || null;
-    return this.mapsKey;
+    const key = this.appService.decryptText(resources[0]?.value, encryptKey) || null;
+    if (key) this.credentialKeys.set(type, key);
+    return key;
   }
 
   getCredentials(credentialType: string) {
@@ -327,6 +339,26 @@ export class LocationStore {
     } finally {
       if (seq === this.searchSeq) this._searching.set(false);
     }
+  }
+
+  /**
+   * Postal-code autocomplete — system-management `GET_ADDRESS_BY_AUTOCOMPLETE_SEARCH`,
+   * the call the website's postal box makes. Stateless: the caller keeps the
+   * results and the pick, so `matches` and `place` on another page are left
+   * alone. Throws on failure; the caller decides what to say.
+   */
+  async autocompleteAddresses(query: string): Promise<Place[]> {
+    const applicationName = 'system-management';
+    const response = await firstValueFrom(
+      this.appService.getcall(
+        'address_data',
+        applicationName,
+        'queryId=GET_ADDRESS_BY_AUTOCOMPLETE_SEARCH&args=&search=' + encodeURIComponent(query.trim()) + '&application=' + applicationName,
+      ),
+    );
+    const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+    const resources: any[] = parsed?.resource ?? [];
+    return resources.map(addressFromRow).filter((p): p is Place => p !== null);
   }
 }
 
